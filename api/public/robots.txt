@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Указываем путь к карте сайта для всех ботов
+Sitemap: https://snakebox.vip/sitemap.xml

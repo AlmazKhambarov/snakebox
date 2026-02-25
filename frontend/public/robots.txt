@@ -1,0 +1,28 @@
+User-agent: Yandex
+Allow: /
+Disallow: /deposit
+Disallow: /cdn-cgi/l/email-protection
+Disallow: */?
+Disallow: *?s=
+Disallow: *&s=
+Sitemap: https://snakebox.vip/sitemap.xml
+
+User-agent: GoogleBot
+Allow: /
+Disallow: /deposit
+Disallow: /cdn-cgi/l/email-protection
+Disallow: */?
+Disallow: *?s=
+Disallow: *&s=
+Sitemap: https://snakebox.vip/sitemap.xml
+
+User-agent: *
+Allow: /
+Disallow: /deposit
+Disallow: /cdn-cgi/l/email-protection
+Disallow: */?
+Disallow: *?s=
+Disallow: *&s=
+Sitemap: https://snakebox.vip/sitemap.xml
+
+Host: https://snakebox.vip/
