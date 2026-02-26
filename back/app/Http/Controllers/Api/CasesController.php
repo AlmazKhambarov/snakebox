@@ -409,6 +409,10 @@ class CasesController extends Controller
     private function updateEventScores($userId, $points)
     {
         $currentEvent = Event::getCurrentEvent();
+        
+        if (!$currentEvent) {
+            return null;
+        }
 
         $eventScore = EventScores::where('user_id', $userId)
             ->where('event_id', $currentEvent->id)
