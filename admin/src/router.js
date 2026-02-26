@@ -110,6 +110,12 @@ const routes = [
         name: "banners",
         meta: { requiresAuth: true }
     },
+    {
+        path: "/change-password",
+        component: () => import("./pages/ChangePassword.vue"),
+        name: "change.password",
+        meta: { requiresAuth: true }
+    },
 ];
 
 const router = createRouter({

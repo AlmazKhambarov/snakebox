@@ -158,6 +158,10 @@
               <!--begin::Menu separator-->
               <div class="separator my-2"></div>
               <!--end::Menu separator-->
+              <div class="menu-item px-5">
+                <router-link :to="{ name: 'change.password' }" class="menu-link px-5">Сменить пароль</router-link>
+              </div>
+              <!--end::Menu item-->
               <!--begin::Menu item-->
               <div class="menu-item px-5">
                 <a @click="handleLogout" class="menu-link px-5">Выход</a>

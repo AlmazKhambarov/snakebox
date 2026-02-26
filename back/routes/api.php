@@ -197,6 +197,7 @@ Route::controller(GiveawayController::class)->prefix('/giveaway')->group(functio
     Route::post('/{id}/join', 'join')->middleware('auth:sanctum');
 });
 Route::post('/admin/login', [\App\Http\Controllers\Admin\AdminAuthController::class, 'login']);
+Route::post('/admin/password/change', [\App\Http\Controllers\Admin\AdminAuthController::class, 'changePassword'])->middleware('auth:sanctum');
 
 Route::prefix('/admin')->middleware('auth:sanctum')->group(function () {
     Route::controller(IndexController::class)->prefix('/index')->group(function () {
