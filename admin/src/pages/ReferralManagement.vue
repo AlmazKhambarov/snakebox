@@ -626,7 +626,7 @@
 <script>
 import Toolbar from "../components/pages/Toolbar.vue";
 import Cookies from "js-cookie";
-import { request } from "../helpers/request.js";
+import { request } from "@/utils/request.js";
 import { toast } from "vue3-toastify";
 
 export default {

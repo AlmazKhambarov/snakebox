@@ -160,7 +160,7 @@
               <!--end::Menu separator-->
               <!--begin::Menu item-->
               <div class="menu-item px-5">
-                <a href="/" class="menu-link px-5">Мой профиль</a>
+                <a @click="handleLogout" class="menu-link px-5">Выход</a>
               </div>
               <!--end::Menu item-->
             </div>
@@ -178,6 +178,13 @@
 </template>
 <script setup>
 import { useAuthStore } from "../stores/auth.store.js";
+import { useRouter } from "vue-router";
 
 const authStore = useAuthStore();
+const router = useRouter();
+
+const handleLogout = () => {
+  authStore.logOut();
+  router.push({ name: 'login' });
+};
 </script>

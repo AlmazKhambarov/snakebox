@@ -1,5 +1,6 @@
 <template>
-    <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+    <!-- Root layout for authenticated users -->
+    <div v-if="isAuth" class="app-page flex-column flex-column-fluid" id="kt_app_page">
         <Header />
         <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
             <Sidebar />
@@ -10,6 +11,9 @@
         </div>
     </div>
 
+    <!-- Bare layout for guest users (login page) -->
+    <router-view v-else :key="$route.fullPath" />
+
     <div id="kt_scrolltop" class="scrolltop" data-kt-scrolltop="true">
         <i class="ki-duotone ki-arrow-up">
             <span class="path1"></span>
@@ -18,34 +22,24 @@
     </div>
 </template>
 
-<script>
-import { mapActions, mapState } from "pinia";
+<script setup>
+import { onMounted, computed } from "vue";
 import { useAuthStore } from "@/stores/auth.store.js";
 import Header from "./components/Header.vue";
 import Footer from "./components/Footer.vue";
 import Sidebar from "./components/Sidebar.vue";
 
-export default {
-    components: {
-        Header,
-        Footer,
-        Sidebar,
-    },
-    computed: {
-        ...mapState(useAuthStore, ["isAuth", "user"]),
-    },
-    methods: {
-        ...mapActions(useAuthStore, ["getUser"]),
-    },
-    mounted() {
-        this.getUser();
-        console.log('isAuth', this.isAuths, this.user);
-        localStorage.setItem("data-bs-theme", "dark");
-        localStorage.setItem("data-bs-theme-mode", "dark");
+const authStore = useAuthStore();
+const isAuth = computed(() => authStore.isAuth);
 
-        document.documentElement.setAttribute("data-bs-theme", "dark");
-    },
-};
+onMounted(async () => {
+    // We don't call getUser() here because it's handled by the router guard
+    // to prevent flickering or race conditions.
+    
+    localStorage.setItem("data-bs-theme", "dark");
+    localStorage.setItem("data-bs-theme-mode", "dark");
+    document.documentElement.setAttribute("data-bs-theme", "dark");
+});
 </script>
 
 <style>

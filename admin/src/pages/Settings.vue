@@ -129,7 +129,7 @@
 </template>
 <script>
 import Toolbar from "../components/pages/Toolbar.vue";
-import { request } from "../helpers/request.js";
+import { request } from "@/utils/request.js";
 import { toast } from "vue3-toastify";
 import { useSettingsStore } from "../stores/settings.store.js";
 

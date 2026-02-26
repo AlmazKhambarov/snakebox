@@ -122,7 +122,7 @@
 
 <script>
 import Toolbar from "../components/pages/Toolbar.vue";
-import { request } from "../helpers/request.js";
+import { request } from "@/utils/request.js";
 import { toast } from "vue3-toastify";
 import Cookies from "js-cookie";
 
@@ -237,7 +237,6 @@ export default {
       const formData = new FormData();
       for (let key in this.newItem) {
         formData.append(key, this.newItem[key]);
-        console.log("Отправляемые данные:", key, this.newItem[key]);
       }
 
       request("POST", "/api/admin/items/create", formData, {

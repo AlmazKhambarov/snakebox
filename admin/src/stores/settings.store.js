@@ -1,19 +1,18 @@
-import {defineStore} from "pinia";
+import { defineStore } from "pinia";
 
 export const useSettingsStore = defineStore('settingsStore', {
     state: () => ({
-        loading: true
+        loading: false
     }),
     getters: {
         isLoading: (state) => state.loading
     },
     actions: {
         async startLoading() {
-            $('.preloader').show();
+            this.loading = true;
         },
         async stopLoading() {
-            $('.preloader').fadeOut();
-            // this.loading = false
+            this.loading = false;
         },
     }
 });

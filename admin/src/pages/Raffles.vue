@@ -415,7 +415,7 @@
 <script>
 import Toolbar from "../components/pages/Toolbar.vue";
 import Cookies from "js-cookie";
-import { request } from "../helpers/request.js";
+import { request } from "@/utils/request.js";
 import { toast } from "vue3-toastify";
 
 export default {
@@ -470,11 +470,8 @@ export default {
                         Authorization: "Bearer " + Cookies.get("token"),
                     },
                     beforeSend: function() {
-                        console.log('Отправка запроса к API:', `${import.meta.env.VITE_API_URL}/api/admin/giveaways`);
-                        console.log('Токен:', Cookies.get("token"));
                     },
                     dataSrc: function(json) {
-                        console.log('Получен ответ от API:', json);
                         return json.data;
                     },
                     error: function (xhr, error, code) {

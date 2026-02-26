@@ -73,7 +73,7 @@
 import Toolbar from "../components/pages/Toolbar.vue";
 import Cookies from "js-cookie";
 import { toast } from "vue3-toastify";
-import { request } from "../helpers/request.js";
+import { request } from "@/utils/request.js";
 
 export default {
     components: {
@@ -101,7 +101,6 @@ export default {
                         Authorization: "Bearer " + Cookies.get("token"),
                     },
                     dataSrc: function (json) {
-                        console.log("API ответ /api/admin/withdraws:", json); // Логируем ответ
                         return json.data || []; // обязательно вернуть массив данных
                     },
                 },

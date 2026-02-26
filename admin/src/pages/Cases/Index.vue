@@ -373,7 +373,7 @@
 <script>
 import Toolbar from "../../components/pages/Toolbar.vue";
 import Cookies from "js-cookie";
-import { request } from "../../helpers/request.js";
+import { request } from "@/utils/request.js";
 import { toast } from "vue3-toastify";
 import { useRouter } from "vue-router";
 
@@ -526,7 +526,6 @@ export default {
       const formData = new FormData();
       for (let key in this.newCase) {
         formData.append(key, this.newCase[key]);
-        console.log("Отправляемые данные:", key, this.newCase[key]);
       }
       formData.append("category_id", newCategoryId);
 
@@ -546,18 +545,15 @@ export default {
     getBox(id) {
       request("GET", "/api/admin/cases/case", { id }).then(({ data }) => {
         if (!data.success) return toast.error(data.message);
-        console.log("data", data);
 
         this.editCase = { ...data.case, image: null };
 
-        console.log("editCase", this.editCase);
 
         const category = {
           id: data.case.category_id,
           text: data.case.category.name,
         };
 
-        console.log("category", category);
 
         const categoryOption = new Option(category.text, category.id, true, true);
 

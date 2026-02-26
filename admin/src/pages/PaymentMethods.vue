@@ -373,7 +373,7 @@
 <script>
 import Toolbar from "../components/pages/Toolbar.vue";
 import Cookies from "js-cookie";
-import { request } from "../helpers/request.js";
+import { request } from "@/utils/request.js";
 import { toast } from "vue3-toastify";
 
 export default {
@@ -540,11 +540,9 @@ export default {
             request("GET", "/api/admin/payments/methods", { id }).then(
                 ({ data }) => {
                     if (!data.success) return toast.error(data.message);
-                    console.log("data", data);
 
                     this.editMethods = { ...data.method, image: null };
 
-                    console.log("editMethods", this.editMethods);
 
                     $('button[data-bs-target="#edit_methods"]').click();
                 }
@@ -565,7 +563,6 @@ export default {
                     this.loadData();
                     toast.success(data.message);
                 } else {
-                    console.log("data", data);
                     toast.error(data.message);
                 }
             } catch (error) {

@@ -528,7 +528,7 @@
 <script setup>
 import Toolbar from "../components/pages/Toolbar.vue";
 import {onMounted, ref} from "vue";
-import {request} from "../helpers/request.js";
+import {request} from "@/utils/request.js";
 
 const stats = ref({
     payments: {

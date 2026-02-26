@@ -2,6 +2,14 @@ import { defineStore } from "pinia";
 import Cookies from "js-cookie";
 import { request } from "@/utils/request.js";
 
+function getCookieOptions() {
+    if (import.meta.env.VITE_APP_PRODUCTION === "on") {
+        const domain = import.meta.env.VITE_APP_FRONTEND_URL?.replace(/^https?:\/\//, '').split('/')[0];
+        return domain ? { path: "/", domain: `.${domain}` } : { path: "/" };
+    }
+    return { path: "/" };
+}
+
 export const useAuthStore = defineStore("auth", {
     state: () => ({
         token: Cookies.get("token") || null,
@@ -11,42 +19,58 @@ export const useAuthStore = defineStore("auth", {
             avatar: "",
             balance: "",
         },
-        status: 0,
+        isLoaded: false,
     }),
     getters: {
-        isAuth: (state) => state.token !== null,
+        isAuth: (state) => !!state.token,
         user: (state) => state.userInfo,
     },
     actions: {
-        async getUser() {
-            if (!Cookies.get("token")) return location.href = import.meta.env.VITE_APP_FRONTEND_URL;
+        async login(username, password) {
+            try {
+                const { data } = await request("POST", "/api/admin/login", { username, password });
 
-            await request("GET", "/api/user/get/admin").then(({ data }) => {
-                console.log('ответ',data);
+                if (data.success) {
+                    this.token = data.token;
+                    Cookies.set("token", data.token, getCookieOptions());
+                    this.userInfo = data.user;
+                    this.isLoaded = true;
+                    return { success: true };
+                }
+
+                return { success: false, message: data.message || "Ошибка авторизации" };
+            } catch (e) {
+                const message = e?.data?.message || e?.message || "Ошибка соединения с сервером";
+                return { success: false, message };
+            }
+        },
+
+        async getUser() {
+            if (!Cookies.get("token")) {
+                this.isLoaded = true;
+                return false;
+            }
+
+            try {
+                const { data } = await request("GET", "/api/user/get/admin");
                 if (data.status === 200) {
                     this.userInfo = data.user;
-                    console.log(data.user);
-                } else { 
-                    window.location.href = import.meta.env.VITE_APP_FRONTEND_URL;
+                    this.isLoaded = true;
+                    return true;
                 }
-            });
-        },
-        async logOut() {
-            this.token = null;
-
-            if (import.meta.env.VITE_APP_PRODUCTION === "on") {
-                const domain = removeHttp(
-                    import.meta.env.VITE_APP_FRONTEND_URL
-                );
-                if (domain) {
-                    Cookies.remove("token", {
-                        domain: `.${domain}`,
-                        path: "/",
-                    });
-                }
-            } else {
-                Cookies.remove("token");
+                this.logOut();
+                return false;
+            } catch {
+                this.logOut();
+                return false;
             }
+        },
+
+        logOut() {
+            this.token = null;
+            this.userInfo = { id: 0, username: "", avatar: "", balance: "" };
+            this.isLoaded = true;
+            Cookies.remove("token", getCookieOptions());
         },
     },
 });
