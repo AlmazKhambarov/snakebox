@@ -529,11 +529,7 @@ export default {
       }
       formData.append("category_id", newCategoryId);
 
-      request("POST", "/api/admin/cases/create", formData, {
-        headers: {
-          "content-type": "multipart/form-data",
-        },
-      }).then(({ data }) => {
+      request("POST", "/api/admin/cases/create", formData).then(({ data }) => {
         if (!data.success) return toast.error(data.message);
         this.loadData();
 
@@ -578,11 +574,7 @@ export default {
       formData.append("category_id", newCategoryId);
       formData.append("item_id", newItemId);
 
-      request("POST", "/api/admin/cases/save", formData, {
-        headers: {
-          "content-type": "multipart/form-data",
-        },
-      }).then(({ data }) => {
+      request("POST", "/api/admin/cases/save", formData).then(({ data }) => {
         if (!data.success) return toast.error(data.message);
         toast.success(data.message);
         this.loadData();

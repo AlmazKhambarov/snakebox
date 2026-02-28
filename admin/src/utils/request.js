@@ -12,7 +12,14 @@ export async function request(type, uri, data = {}, headers = {}) {
         defaultHeaders['Authorization'] = `Bearer ${Cookies.get('token')}`;
     }
 
-    headers = { ...defaultHeaders, ...headers };
+    if (!(data instanceof FormData)) {
+        headers = { ...defaultHeaders, ...headers };
+    } else {
+        headers = { ...headers };
+        if (Cookies.get('token')) {
+            headers['Authorization'] = `Bearer ${Cookies.get('token')}`;
+        }
+    }
 
     try {
         let response;
