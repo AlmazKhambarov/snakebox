@@ -90,7 +90,6 @@ class NirvanaUzsController extends Controller
             'callbackURL' => config('app.url') . '/api/payment/nirvana-uzs/callback?externalId=' . $transaction_id,
             'externalID'  => $transaction_id,
             'currency'    => 'UZS',
-            'tokenCode'   => $method,
             'userInfo'    => [
                 'id'        => (string) $user->id,
                 'ip'        => $request->getClientIp(),
