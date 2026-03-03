@@ -8,7 +8,7 @@
                         :to="{ name: 'index' }"
                         class="header__logotype"
                     >
-                            <img src="/dist/assets/icons/logonew.svg" alt="" />
+                            <img src="/assets/icons/logonew.svg" alt="" />
                         <!-- <span>{{ settings.site_name }}</span> -->
                     </router-link>
                     <div class="header__online">
