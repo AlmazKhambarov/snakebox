@@ -294,18 +294,6 @@ class CasesController extends Controller
                 
                 // Обновляем статистику RTP кейса
                 $this->rtpService->updateBoxStats($box, $box->price, $itemData->steam_price);
-
-                if (!$hasFreeCase) {
-                    $user->update([
-                        'balance' => $user->balance - $totalPrice,
-                        'total_bet' => $user->total_bet + $totalPrice,
-                        'event_points' => $user->event_points + $points
-                    ]);
-
-                    $this->updateEventScores($user->id, $points);
-                }
-                $this->liveService->addToLive($liveIds, 'BOX');
-                $this->redisService->updateUserBalance($user->id, $user->balance, $user->event_points);
             } else {
                 // Для демо режима
                 $itemData = $caseItem->item;
@@ -318,6 +306,20 @@ class CasesController extends Controller
                     'rarity' => $itemData->rarity,
                 ];
             }
+        }
+
+        if (!$demoOpen) {
+            if (!$hasFreeCase) {
+                $user->update([
+                    'balance' => $user->balance - $totalPrice,
+                    'total_bet' => $user->total_bet + $totalPrice,
+                    'event_points' => $user->event_points + $points
+                ]);
+
+                $this->updateEventScores($user->id, $points);
+            }
+            $this->liveService->addToLive($liveIds, 'BOX');
+            $this->redisService->updateUserBalance($user->id, $user->balance, $user->event_points);
         }
 
         if ($hasFreeCase && !$demoOpen) {

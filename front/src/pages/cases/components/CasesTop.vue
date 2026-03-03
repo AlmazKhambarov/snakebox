@@ -76,14 +76,14 @@
                 v-if="state === 'opened'"
                 class="case__win-items"
                 x-ref="winners"
-                style=""
+                style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;"
             >
-                <div class="case__win-item">
-                    <div class="item" v-if="winItems" :class="getItemRarityClass(winItems.rarity)">
+                <div class="case__win-item" v-for="(winItem, index) in winItems" :key="index">
+                    <div class="item" :class="getItemRarityClass(winItem.rarity)">
                         <div class="item__inner">
                             <div class="item__top">
                                 <div class="item__quality-top">
-                                    {{ winItems.quality }}
+                                    {{ winItem.quality }}
                                 </div>
                                 <div class="sum sum--xs sum--bgWhite">
                                     <div
@@ -92,12 +92,12 @@
                                             mask-image: url('/assets/icons/coin.svg');
                                         "
                                     ></div>
-                                    {{ winItems.steam_price / 100 }}
+                                    {{ winItem.steam_price / 100 }}
                                 </div>
                             </div>
                             <div class="item__center">
                                 <img
-                                    :src="winItems.image"
+                                    :src="winItem.image"
                                     class="item__image"
                                     alt="skin"
                                 />
@@ -110,23 +110,23 @@
                             </div>
                             <div class="item__bottom">
                                 <div class="item__model">
-                                    {{ winItems.weapon }}
+                                    {{ winItem.weapon }}
                                 </div>
                                 <div class="item__name">
-                                    {{ winItems.skin_name }}
+                                    {{ winItem.skin_name }}
                                 </div>
                             </div>
                         </div>
                         <img
                             :src="`/images/case/shadow-${getItemRarityClass(
-                                winItems.rarity
+                                winItem.rarity
                             )}.webp`"
                             class="item__rarity-img"
                             alt="rarity"
                         />
                     </div>
                     <button
-                        @click="sellItem(winItems.id)"
+                        @click="sellItem(winItem.id)"
                         type="button"
                         class="case__win-item-button"
                     >
@@ -138,7 +138,7 @@
                                     mask-image: url('/assets/icons/coin.svg');
                                 "
                             ></div>
-                            {{ winItems.steam_price / 100 }}
+                            {{ winItem.steam_price / 100 }}
                         </div>
                     </button>
                 </div>
@@ -195,21 +195,32 @@
                         "
                     ></div
                 ></a>
+                <div v-if="state === 'default' && isAuth && !box.is_free" class="case__multiplier-selector">
+                    <button 
+                        v-for="n in 5" 
+                        :key="n"
+                        @click="selectedCount = n"
+                        class="multiplier-btn"
+                        :class="{ active: selectedCount === n }"
+                    >
+                        x{{ n }}
+                    </button>
+                </div>
                 <button
                     v-show="
                         state === 'default' &&
                         isAuth &&
-                        (box.is_free || user.balance >= box.price || demoOpen)
+                        (box.is_free || user.balance >= box.price * selectedCount || demoOpen)
                     "
-                    @click="openBox()"
+                    @click="openBox(box.is_free ? 1 : selectedCount)"
                     type="button"
                     class="btn page__controls-main-btn"
                 >
                     <div class="btn__inner">
                         <div class="btn__inner-left">
-                            <h2>Открыть кейс за</h2>
+                            <h2>{{ box.is_free ? 'Открыть бесплатно' : `Открыть за` }}</h2>
                         </div>
-                        <div class="sum sum--sm">
+                        <div v-if="!box.is_free" class="sum sum--sm">
                             <div
                                 class="icon coin"
                                 style="
@@ -217,9 +228,7 @@
                                 "
                             ></div>
                             <span
-                                ><span>{{
-                                    box.is_free ? "FREE" : box.price / 100
-                                }}</span></span
+                                ><span>{{ (box.price * selectedCount) / 100 }}</span></span
                             >
                         </div>
                     </div>
@@ -346,12 +355,13 @@ export default {
             speed: 1,
 
             rouletteItems: [],
-            winItems: null,
+            winItems: [],
 
             screenWidth: window.innerWidth,
             showWinNow: false,
             demoOpen: false,
             fastOpen: false,
+            selectedCount: 1,
         };
     },
     computed: {
@@ -405,10 +415,10 @@ export default {
             this.$playSound("/sounds/click.mp3");
         },
 
-        async openBox(type) {
-            const openBox = await request("POST", "/case/open", {
+        async openBox(count = 1) {
+            await request("POST", "/case/open", {
                 id: this.box.id,
-                count: 1,
+                count: count,
                 demoOpen: this.demoOpen,
             }).then(({ data }) => {
                 if (!data.success) {
@@ -418,24 +428,22 @@ export default {
                 this.$playSound("/sounds/click.mp3");
                 this.initRoulette();
                 this.state = "opening";
-                this.winItems = data.winItems[0];
+                this.winItems = data.winItems;
+                
+                // Показываем в рулетке первый выпавший предмет
                 this.setWinItem(data.winItems[0]);
 
                 this.$nextTick(() => {
-                    const duration = this.fastOpen ? 2.5 : 8.5;
+                    const duration = this.fastOpen ? 2 : 8;
                     this.animateRoulette(35, duration);
+                    
+                    setTimeout(() => {
+                        this.state = "opened";
+                        this.$playSound("/sounds/contract-run.mp3");
+                    }, duration * 1000 + 500);
                 });
 
                 this.box.is_free = false;
-
-                setTimeout(
-                    () => {
-                        this.state = "opened";
-                        this.$playSound("/sounds/contract-run.mp3");
-                    },
-                    this.fastOpen ? 2500 : 9500
-                );
-
             });
         },
         randomInteger(min, max) {
@@ -542,7 +550,12 @@ export default {
                     return;
                 } else {
                     this.$toastr.success(data.message);
-                    this.refresh();
+                    // Вместо полной перезагрузки удаляем проданный предмет из списка
+                    this.winItems = this.winItems.filter(item => item.id !== liveId);
+                    // Если предметов больше нет, возвращаемся в начальное состояние
+                    if (this.winItems.length === 0) {
+                        this.refresh();
+                    }
                 }
             });
         },
@@ -554,3 +567,41 @@ export default {
     },
 };
 </script>
+<style scoped>
+.case__multiplier-selector {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 6px;
+    border-radius: 12px;
+}
+
+.multiplier-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    background: transparent;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-weight: bold;
+    font-size: 16px;
+    min-width: 60px;
+}
+
+.multiplier-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.multiplier-btn.active {
+    background: var(--primary-color, #ff9900);
+    border-color: var(--primary-color, #ff9900);
+    color: #000;
+}
+
+.page__controls-main-btn {
+    width: 100%;
+}
+</style>

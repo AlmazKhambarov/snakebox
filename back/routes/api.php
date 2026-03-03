@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\Payment\PaymentController;
 use App\Http\Controllers\Api\Payment\NirvanaController;
 use App\Http\Controllers\Api\Payment\CryptoCloudController;
 use App\Http\Controllers\Api\Payment\TBankController;
+use App\Http\Controllers\Api\Payment\NirvanaUzsController;
 
 use App\Http\Controllers\Admin\CategoriesController;
 use App\Http\Controllers\Admin\PromocodesController;
@@ -185,6 +186,10 @@ Route::controller(PaymentController::class)->prefix('/payment')->group(function 
         Route::post('/callback', 'callback');
     });
     Route::controller(TBankController::class)->prefix('/tbank')->group(function () {
+        Route::post('/create', 'create')->middleware(['auth:sanctum', \App\Http\Middleware\CheckUserBanned::class]);
+        Route::get('/callback', 'callback');
+    });
+    Route::controller(NirvanaUzsController::class)->prefix('/nirvana-uzs')->group(function () {
         Route::post('/create', 'create')->middleware(['auth:sanctum', \App\Http\Middleware\CheckUserBanned::class]);
         Route::get('/callback', 'callback');
     });

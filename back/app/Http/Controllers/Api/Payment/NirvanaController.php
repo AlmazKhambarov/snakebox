@@ -110,13 +110,13 @@ class NirvanaController extends Controller
     $optionsForSign = $options;
     unset($optionsForSign['userInfo']);
 
-    $options['sign'] = md5(implode("", $optionsForSign) . '34ddf7e1-0af2-44c2-ad2a-1952eb4df268');
+    $options['sign'] = md5(implode("", $optionsForSign) . env('NIRVANA_API_PRIVATE'));
 
     $client = new Client();
     $response = $client->post('https://f.nirvanapay.pro/api/v2/order', [
       'headers' => [
-        'ApiPublic'  => '11a01009-f4ad-4074-ac42-660ea4ea1144',
-        'ApiPrivate' => '34ddf7e1-0af2-44c2-ad2a-1952eb4df268',
+        'ApiPublic'  => env('NIRVANA_API_PUBLIC'),
+        'ApiPrivate' => env('NIRVANA_API_PRIVATE'),
       ],
       'json' => $options,
     ]);
@@ -139,8 +139,8 @@ class NirvanaController extends Controller
     $client = new Client();
     $response = $client->get('https://f.nirvanapay.pro/api/v2/order', [
       'headers' => [
-        'ApiPublic'  => '11a01009-f4ad-4074-ac42-660ea4ea1144',
-        'ApiPrivate' => '34ddf7e1-0af2-44c2-ad2a-1952eb4df268',
+        'ApiPublic'  => env('NIRVANA_API_PUBLIC'),
+        'ApiPrivate' => env('NIRVANA_API_PRIVATE'),
       ],
       'query' => [
         'externalId' => $externalId,
