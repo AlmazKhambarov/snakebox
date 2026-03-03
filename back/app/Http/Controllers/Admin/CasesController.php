@@ -61,13 +61,13 @@ class CasesController extends Controller
     $randomId = Str::random(10);
     $image = $request->file('image');
     $imageName = $randomId . '_' . time() . '.' . $image->getClientOriginalExtension();
-    $image->move(base_path('/frontend/public/boxes/'), $imageName);
+    Storage::disk('public')->putFileAs('boxes', $image, $imageName);
 
     Boxes::query()->create([
       'category_id' => $request->category_id,
       'name' => $request->name,
       'url' => $request->url,
-      'image' => '/boxes/' . $imageName,
+      'image' => '/storage/boxes/' . $imageName,
       'price' => $request->price * 100,
       'is_active' => $request->is_active,
       'is_visible' => $request->is_visible,
@@ -137,9 +137,9 @@ class CasesController extends Controller
     if ($request->hasFile('image')) {
         // удаляем старое
         if ($box->image) {
-            $oldFile = public_path(str_replace('/frontend/public', '', $box->image));
-            if (file_exists($oldFile)) {
-                unlink($oldFile);
+            $oldPath = str_replace('/storage/', '', $box->image);
+            if (Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
             }
         }
 
@@ -147,9 +147,9 @@ class CasesController extends Controller
         $randomId = Str::random(10);
         $image = $request->file('image');
         $imageName = $randomId . '_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(base_path('frontend/public/boxes/'), $imageName);
+        Storage::disk('public')->putFileAs('boxes', $image, $imageName);
 
-        $imagePath = '/boxes/' . $imageName;
+        $imagePath = '/storage/boxes/' . $imageName;
     }
 
     $box->update([
