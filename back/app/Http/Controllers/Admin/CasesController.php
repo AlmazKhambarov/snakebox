@@ -67,7 +67,7 @@ class CasesController extends Controller
       'category_id' => $request->category_id,
       'name' => $request->name,
       'url' => $request->url,
-      'image' => '/storage/boxes/' . $imageName,
+      'image' => config('app.url') . '/storage/boxes/' . $imageName,
       'price' => $request->price * 100,
       'is_active' => $request->is_active,
       'is_visible' => $request->is_visible,
@@ -149,7 +149,7 @@ class CasesController extends Controller
         $imageName = $randomId . '_' . time() . '.' . $image->getClientOriginalExtension();
         Storage::disk('public')->putFileAs('boxes', $image, $imageName);
 
-        $imagePath = '/storage/boxes/' . $imageName;
+        $imagePath = config('app.url') . '/storage/boxes/' . $imageName;
     }
 
     $box->update([
