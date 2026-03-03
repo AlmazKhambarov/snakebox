@@ -129,7 +129,7 @@ class NirvanaUzsController extends Controller
 
     public function callback(Request $request)
     {
-        $externalId = $request->query('externalId');
+        $externalId = $request->query('externalI    d');
 
         try {
             $client   = new Client();
