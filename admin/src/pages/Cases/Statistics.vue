@@ -837,6 +837,7 @@ export default {
 
         const getImageUrl = (imagePath) => {
             if (!imagePath) return '';
+            if (imagePath.startsWith('http')) return imagePath;
             return frontendUrl + imagePath;
         };
 

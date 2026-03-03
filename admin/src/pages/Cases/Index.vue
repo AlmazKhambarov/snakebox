@@ -441,9 +441,7 @@ export default {
           {
             data: "image",
             render: (data, type, row) =>
-              `<img src="${
-                import.meta.env.VITE_APP_FRONTEND_URL + data
-              }" alt="image" width="50" height="50">`,
+              `<img src="${data}" alt="image" width="50" height="50">`,
           },
           {
             data: "price",

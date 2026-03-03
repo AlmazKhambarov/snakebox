@@ -137,8 +137,10 @@ class CasesController extends Controller
     if ($request->hasFile('image')) {
         // удаляем старое
         if ($box->image) {
-            $oldPath = str_replace('/storage/', '', $box->image);
-            if (Storage::disk('public')->exists($oldPath)) {
+            // Extract path after '/storage/' from full URL or relative path
+            $parts = explode('/storage/', $box->image);
+            $oldPath = end($parts);
+            if ($oldPath && Storage::disk('public')->exists($oldPath)) {
                 Storage::disk('public')->delete($oldPath);
             }
         }
