@@ -9,7 +9,7 @@
                         :to="{ name: 'index' }"
                         class="header__logotype"
                     >
-                            <img src="/assets/icons/logo.webp" alt="" />
+                            <img src="/dist/assets/icons/logonew.svg" alt="" />
                         <!-- <span>{{ settings.site_name }}</span> -->
                     </router-link>
                             <nav class="header__nav gpu-boost">
