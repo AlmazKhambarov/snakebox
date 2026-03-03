@@ -234,6 +234,14 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'payment_payme' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/payment/payme.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 14,
+            'replace_placeholders' => true,
+        ],
+
         'payment_main' => [
             'driver' => 'daily',
             'path' => storage_path('logs/payment/main.log'),

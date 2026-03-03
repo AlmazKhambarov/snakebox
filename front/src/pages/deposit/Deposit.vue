@@ -34,7 +34,7 @@
                             :data-min="method.min_amount"
                         >
                             <div class="deposit__method-min" v-if="method.system !== 'cryptocloud'">
-                                {{ method.min_amount }} {{ method.system === 'nirvana_uzs' ? 'UZS' : 'RUB' }}
+                                {{ method.min_amount }} {{ ['nirvana_uzs', 'payme'].includes(method.system) ? 'UZS' : 'RUB' }}
                             </div>
                             <div class="deposit__method-min" v-if="method.system === 'cryptocloud'">
                                 {{ method.name }}
@@ -120,7 +120,7 @@
                                                 ? selectedMethod.min_amount.toFixed(2)
                                                 : "1.00"
                                         }}
-                                        {{ selectedMethod?.system === 'nirvana_uzs' ? 'UZS' : 'RUB' }}
+                                        {{ ['nirvana_uzs', 'payme'].includes(selectedMethod?.system) ? 'UZS' : 'RUB' }}
                                     </span>
                                 </div>
                             </div>
