@@ -192,6 +192,41 @@
                 </div>
             </div>
         </div>
+
+        <!-- P2P Card Details Modal -->
+        <div class="deposit__card-modal" v-if="cardDetails">
+            <div class="deposit__card-modal-overlay" @click="cardDetails = null"></div>
+            <div class="deposit__card-modal-content">
+                <div class="deposit__card-modal-header">
+                    <span>Реквизиты для оплаты</span>
+                    <button @click="cardDetails = null" class="deposit__card-modal-close">&times;</button>
+                </div>
+                <div class="deposit__card-modal-body">
+                    <div class="deposit__card-modal-field">
+                        <label>Банк</label>
+                        <span>{{ cardDetails.bankName }}</span>
+                    </div>
+                    <div class="deposit__card-modal-field">
+                        <label>Номер карты</label>
+                        <div class="deposit__card-modal-copy">
+                            <span>{{ cardDetails.receiver }}</span>
+                            <button @click="copyCard(cardDetails.receiver)" class="deposit__card-modal-copy-btn">Копировать</button>
+                        </div>
+                    </div>
+                    <div class="deposit__card-modal-field">
+                        <label>Получатель</label>
+                        <span>{{ cardDetails.recipientName }}</span>
+                    </div>
+                    <div class="deposit__card-modal-field">
+                        <label>Сумма к оплате</label>
+                        <span class="deposit__card-modal-amount">{{ cardDetails.amount }} {{ cardDetails.currency }}</span>
+                    </div>
+                    <div class="deposit__card-modal-warning">
+                        ⚠️ Переведите <b>точную сумму</b> на указанную карту. После оплаты баланс пополнится автоматически в течение 5 минут.
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -218,6 +253,7 @@ export default {
             debounceTimer: null,
             success: false,
             percent: 0,
+            cardDetails: null,
         };
     },
 
@@ -284,6 +320,15 @@ export default {
             }).then(({ data }) => {
                 if (!data.success) {
                     this.$toastr.error(data.message);
+                } else if (data.type === 'card') {
+                    this.cardDetails = {
+                        receiver: data.receiver,
+                        bankName: data.bankName,
+                        recipientName: data.recipientName,
+                        amount: data.amount,
+                        currency: data.currency,
+                    };
+                    this.$toastr.success(data.message);
                 } else {
                     this.$toastr.success(data.message);
                     setTimeout(() => {
@@ -292,9 +337,32 @@ export default {
                 }
             });
         },
+        copyCard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                this.$toastr.success('Скопировано!');
+            });
+        },
         selectMethod(method) {
             this.selectedMethod = method;
         },
     },
 };
 </script>
+
+<style scoped>
+.deposit__card-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+.deposit__card-modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); }
+.deposit__card-modal-content { position: relative; background: #1a1a2e; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; width: 90%; max-width: 420px; padding: 24px; z-index: 1; }
+.deposit__card-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.deposit__card-modal-header span { font-size: 18px; font-weight: 600; color: #fff; }
+.deposit__card-modal-close { background: none; border: none; color: #888; font-size: 24px; cursor: pointer; }
+.deposit__card-modal-field { margin-bottom: 16px; }
+.deposit__card-modal-field label { display: block; font-size: 12px; color: #888; margin-bottom: 4px; }
+.deposit__card-modal-field span { font-size: 16px; color: #fff; }
+.deposit__card-modal-copy { display: flex; align-items: center; gap: 10px; }
+.deposit__card-modal-copy span { font-size: 20px; font-weight: 600; letter-spacing: 2px; color: #4ade80; }
+.deposit__card-modal-copy-btn { background: rgba(74,222,128,0.15); border: 1px solid rgba(74,222,128,0.3); color: #4ade80; padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; transition: background 0.2s; }
+.deposit__card-modal-copy-btn:hover { background: rgba(74,222,128,0.25); }
+.deposit__card-modal-amount { font-size: 22px !important; font-weight: 700; color: #4ade80 !important; }
+.deposit__card-modal-warning { margin-top: 16px; padding: 12px; background: rgba(255,170,0,0.1); border: 1px solid rgba(255,170,0,0.2); border-radius: 10px; font-size: 13px; color: #fbbf24; line-height: 1.5; }
+</style>

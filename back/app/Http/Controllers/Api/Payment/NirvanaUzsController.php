@@ -6,16 +6,15 @@ use App\Models\PaymentMethods;
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Promocode;
+use App\Models\Settings;
 use App\Models\User;
 use App\Services\RedisService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use GuzzleHttp\Client;
 use Carbon\Carbon;
 use App\Models\PromocodeUse;
 use App\Models\ReferralEarning;
-use App\Models\Settings;
 
 class NirvanaUzsController extends Controller
 {
@@ -44,11 +43,10 @@ class NirvanaUzsController extends Controller
         $limits = $this->getDepositLimits($method, $system);
 
         if ($amount < $limits['min_amount']) {
-            return ['success' => false, 'message' => "Минимальная сумма депозита: {$limits['min_amount']} ₽."];
+            return ['success' => false, 'message' => "Минимальная сумма депозита: {$limits['min_amount']} сум."];
         }
-
         if ($amount > $limits['max_amount']) {
-            return ['success' => false, 'message' => "Максимальная сумма депозита: {$limits['max_amount']} ₽."];
+            return ['success' => false, 'message' => "Максимальная сумма депозита: {$limits['max_amount']} сум."];
         }
 
         $promocode = null;
@@ -84,23 +82,22 @@ class NirvanaUzsController extends Controller
         ]);
 
         $options = [
+            'clientID'    => $transaction_id,
             'amount'      => $amount,
-            'redirectURL' => config('app.frontend_url'),
-            'siteName'    => $settings->title,
-            'callbackURL' => config('app.url') . '/api/payment/nirvana-uzs/callback?externalId=' . $transaction_id,
-            'externalID'  => $transaction_id,
+            'token'       => $method,
             'currency'    => 'UZS',
+            'callbackUrl' => config('app.url') . '/api/payment/nirvana-uzs/callback?clientID=' . $transaction_id,
             'userInfo'    => [
-                'id'        => (string) $user->id,
-                'ip'        => $request->getClientIp(),
-                'userAgent' => $request->userAgent(),
-                'email'     => 'no-email@gmail.com',
+                'ip'    => $request->getClientIp(),
+                'ua'    => $request->userAgent(),
+                'email' => 'no-email@gmail.com',
+                'id'    => (string) $user->id,
             ],
         ];
 
         try {
             $client   = new Client();
-            $response = $client->post('https://f.nirvanapay.pro/api/v2/order', [
+            $response = $client->post('https://api.nirvanapay.pro/create/in', [
                 'headers' => [
                     'ApiPublic'  => env('NIRVANA_API_PUBLIC'),
                     'ApiPrivate' => env('NIRVANA_API_PRIVATE'),
@@ -111,51 +108,67 @@ class NirvanaUzsController extends Controller
             $responseData = json_decode($response->getBody()->getContents(), true);
             Log::channel('payment_nirvana')->info('NirvanaUZS response:', $responseData);
 
-            if (empty($responseData['data']['redirectURL'])) {
-                Log::channel('payment_nirvana')->error('NirvanaUZS: no redirectURL', $responseData);
-                return ['success' => false, 'message' => 'Ошибка при создании платежа. Попробуйте позже.'];
+            if (($responseData['status'] ?? '') === 'ERROR') {
+                Log::channel('payment_nirvana')->error('NirvanaUZS error:', $responseData);
+                return ['success' => false, 'message' => $responseData['reason'] ?? 'Ошибка при создании платежа.'];
             }
 
+            // Save trackerID in metadata
+            $metadata = $payment->metadata ?? [];
+            $metadata['trackerID'] = $responseData['trackerID'] ?? null;
+            $payment->metadata = $metadata;
+            $payment->save();
+
             return [
-                'success' => true,
-                'message' => 'Переносим на страницу оплаты...',
-                'link'    => $responseData['data']['redirectURL'],
+                'success'       => true,
+                'message'       => 'Переведите средства по реквизитам ниже',
+                'type'          => 'card',
+                'receiver'      => $responseData['receiver'] ?? '',
+                'bankName'      => $responseData['extra']['bankName'] ?? $method,
+                'recipientName' => $responseData['extra']['recipientName'] ?? '',
+                'amount'        => $amount,
+                'currency'      => 'UZS',
             ];
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            $responseBody = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : 'no response';
+            Log::channel('payment_nirvana')->error('NirvanaUZS client error: ' . $e->getMessage() . ' | Body: ' . $responseBody);
+            return ['success' => false, 'message' => 'Ошибка Nirvana: ' . $responseBody];
         } catch (\Exception $e) {
             Log::channel('payment_nirvana')->error('NirvanaUZS exception: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Ошибка соединения с платёжной системой.'];
+            return ['success' => false, 'message' => 'Ошибка: ' . $e->getMessage()];
         }
     }
 
     public function callback(Request $request)
     {
-        $externalId = $request->query('externalId');
+        $clientID = $request->query('clientID');
 
         try {
             $client   = new Client();
-            $response = $client->get('https://f.nirvanapay.pro/api/v2/order', [
+            $response = $client->post('https://api.nirvanapay.pro/transaction/status', [
                 'headers' => [
                     'ApiPublic'  => env('NIRVANA_API_PUBLIC'),
                     'ApiPrivate' => env('NIRVANA_API_PRIVATE'),
                 ],
-                'query' => ['externalId' => $externalId],
+                'json' => ['clientID' => $clientID],
             ]);
 
             $body = json_decode($response->getBody()->getContents(), true);
             Log::channel('payment_nirvana')->debug('NirvanaUZS callback:', $body);
 
-            if (($body['data']['status'] ?? '') !== 'SUCCESS') {
+            if (($body['status'] ?? '') !== 'SUCCESS') {
                 return response('Payment not SUCCESS', 200);
             }
 
-            $payment = Payment::query()->where('transaction_id', $body['data']['externalID'])->first();
+            $payment = Payment::query()->where('transaction_id', $clientID)->first();
             if (!$payment) return response('Payment not found', 200);
             if ($payment->status == Payment::PAID) return response('Already paid', 200);
 
             $user = User::query()->find($payment->user_id);
             if (!$user) return response('User not found', 200);
 
-            $amount = $payment->amount * 100;
+            $receivedAmount = $body['amountFiatReceived'] ?? $payment->amount;
+            $amount = $receivedAmount * 100;
 
             // === Промокод ===
             if ($payment->promocode_id) {
@@ -172,10 +185,10 @@ class NirvanaUzsController extends Controller
                 }
             }
 
-            $event_points = $payment->amount * 0.1;
+            $event_points = $receivedAmount * 0.1;
             $user->increment('balance', $amount);
             $user->increment('event_points', $event_points);
-            $user->increment('total_deposited', $payment->amount * 100);
+            $user->increment('total_deposited', $receivedAmount * 100);
 
             $payment->status = Payment::PAID;
             $payment->save();
@@ -194,20 +207,20 @@ class NirvanaUzsController extends Controller
                         1 => 0.5, 2 => 1, 3 => 1.5, 4 => 2, 5 => 2.5, default => 0,
                     };
 
-                    if (!$hasOtherDeposits && $payment->amount >= 1000) {
+                    if (!$hasOtherDeposits && $receivedAmount >= 1000) {
                         $fixedBonus   = 2500;
-                        $percentBonus = ($payment->amount * 100) * ($value / 100);
+                        $percentBonus = ($receivedAmount * 100) * ($value / 100);
                         $totalBonus   = $fixedBonus + $percentBonus;
                         $referrer->update([
-                            'balance'           => $referrer->balance + $fixedBonus,
-                            'referral_balance'  => $referrer->referral_balance + $percentBonus,
-                            'total_earned'      => $referrer->total_earned + $totalBonus,
+                            'balance'          => $referrer->balance + $fixedBonus,
+                            'referral_balance' => $referrer->referral_balance + $percentBonus,
+                            'total_earned'     => $referrer->total_earned + $totalBonus,
                         ]);
                         ReferralEarning::query()->create([
                             'user_id'        => $referrer->id,
                             'referral_id'    => $user->id,
                             'amount'         => $totalBonus,
-                            'deposit_amount' => $payment->amount * 100,
+                            'deposit_amount' => $receivedAmount * 100,
                             'percentage'     => $value,
                             'type'           => 'nirvana_uzs',
                             'description'    => 'Бонус 25₽ и ' . $value . '% за первый депозит',
@@ -215,7 +228,7 @@ class NirvanaUzsController extends Controller
                             'updated_at'     => now(),
                         ]);
                     } else {
-                        $percentBonus = ($payment->amount * 100) * ($value / 100);
+                        $percentBonus = ($receivedAmount * 100) * ($value / 100);
                         $referrer->update([
                             'balance'          => $referrer->balance + $percentBonus,
                             'referral_balance' => $referrer->referral_balance + $percentBonus,
@@ -225,7 +238,7 @@ class NirvanaUzsController extends Controller
                             'user_id'        => $referrer->id,
                             'referral_id'    => $user->id,
                             'amount'         => $percentBonus,
-                            'deposit_amount' => $payment->amount * 100,
+                            'deposit_amount' => $receivedAmount * 100,
                             'percentage'     => $value,
                             'type'           => 'nirvana_uzs',
                             'description'    => $value . '% от депозита',
@@ -260,8 +273,8 @@ class NirvanaUzsController extends Controller
         }
 
         return [
-            'min_amount' => 1000,     // 10 сум
-            'max_amount' => 10000000, // 10 000 000 сум
+            'min_amount' => 5000,
+            'max_amount' => 50000000,
         ];
     }
 }
