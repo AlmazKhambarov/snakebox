@@ -104,7 +104,7 @@ class PaymeController extends Controller
 
         // Generate Payme checkout URL
         $merchantId = env('PAYME_MERCHANT_ID');
-        $params = "m={$merchantId};ac.order_id={$payment->id};a={$amountInTiyin};c=" . urlencode(config('app.frontend_url'));
+        $params = "m={$merchantId};ac.order_id={$payment->id};a={$amountInTiyin}";
 
         $encodedParams = base64_encode($params);
 
