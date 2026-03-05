@@ -462,27 +462,25 @@ class PaymeController extends Controller
             return $this->errorResponse(self::ERROR_TRANSACTION_NOT_FOUND, 'Transaction not found', $id);
         }
 
-        if ($payment->status === Payment::PAID) {
-            // Already completed - cancel after perform
-            $cancelTime = now()->timestamp * 1000;
-            $metadata = $payment->metadata ?? [];
-            $metadata['payme_cancel_time'] = $cancelTime;
-            $metadata['payme_cancel_reason'] = $reason;
-            $payment->metadata = $metadata;
-            $payment->status = Payment::CANCELLED;
-            $payment->save();
+        // Already cancelled — return saved data
+        if ($payment->status === Payment::CANCELLED) {
+            $state = isset($payment->metadata['payme_perform_time'])
+                ? self::STATE_CANCELLED_AFTER
+                : self::STATE_CANCELLED;
 
             return response()->json([
                 'id'     => $id,
                 'result' => [
-                    'transaction'  => (string) $payment->id,
-                    'cancel_time'  => $cancelTime,
-                    'state'        => self::STATE_CANCELLED_AFTER,
+                    'transaction' => (string) $payment->id,
+                    'cancel_time' => $payment->metadata['payme_cancel_time'] ?? 0,
+                    'state'       => $state,
                 ],
                 'error' => null,
             ]);
         }
 
+        // Determine state based on whether transaction was performed
+        $wasPerformed = ($payment->status === Payment::PAID) || isset($payment->metadata['payme_perform_time']);
         $cancelTime = now()->timestamp * 1000;
         $metadata = $payment->metadata ?? [];
         $metadata['payme_cancel_time'] = $cancelTime;
@@ -496,7 +494,7 @@ class PaymeController extends Controller
             'result' => [
                 'transaction' => (string) $payment->id,
                 'cancel_time' => $cancelTime,
-                'state'       => self::STATE_CANCELLED,
+                'state'       => $wasPerformed ? self::STATE_CANCELLED_AFTER : self::STATE_CANCELLED,
             ],
             'error' => null,
         ]);
