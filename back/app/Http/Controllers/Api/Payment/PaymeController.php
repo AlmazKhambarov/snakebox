@@ -533,8 +533,9 @@ class PaymeController extends Controller
 
         $payments = Payment::query()
             ->where('system', 'payme')
-            ->where('created_at', '>=', Carbon::createFromTimestampMs($from))
-            ->where('created_at', '<=', Carbon::createFromTimestampMs($to))
+            ->whereNotNull('metadata->payme_id')
+            ->whereRaw("CAST(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.payme_create_time')) AS UNSIGNED) >= ?", [$from])
+            ->whereRaw("CAST(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.payme_create_time')) AS UNSIGNED) <= ?", [$to])
             ->get();
 
         $transactions = [];
