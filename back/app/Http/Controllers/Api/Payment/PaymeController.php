@@ -130,14 +130,16 @@ class PaymeController extends Controller
         // Authenticate request
         $auth = $request->header('Authorization');
         
-        // Log auth attempt (for debugging - remove in production or use sensitive logging)
-        Log::channel('payment_payme')->info("Payme callback attempt: method={$method}, id={$id}, auth_header=" . ($auth ?? 'MISSING'));
+        // Log auth attempt to 'user' channel because 'payment_payme' might not be working
+        $logMsg = "[PAYME DEBUG] callback attempt: method={$method}, id={$id}, auth_header=" . ($auth ?? 'MISSING');
+        Log::channel('user')->info($logMsg);
 
         if (!$this->authenticate($auth)) {
-            Log::channel('payment_payme')->warning("Payme callback: Authentication failed for method={$method}, id={$id}");
+            Log::channel('user')->warning("[PAYME DEBUG] Authentication failed for method={$method}, id={$id}");
             return $this->errorResponse(self::ERROR_AUTH, 'Unauthorized', $id);
         }
 
+        Log::channel('user')->info("[PAYME DEBUG] callback approved: {$method}");
         Log::channel('payment_payme')->info("Payme callback: {$method}", $params ?? []);
 
         switch ($method) {
@@ -161,18 +163,29 @@ class PaymeController extends Controller
     private function authenticate($auth): bool
     {
         if (!$auth || !str_starts_with($auth, 'Basic ')) {
+            Log::channel('user')->error("[PAYME DEBUG] auth: MISSING or invalid Basic header");
             return false;
         }
 
         $decoded = base64_decode(substr($auth, 6));
         $parts = explode(':', $decoded, 2);
 
-        if (count($parts) !== 2) return false;
+        if (count($parts) !== 2) {
+            Log::channel('user')->error("[PAYME DEBUG] auth: Invalid decoded format: {$decoded}");
+            return false;
+        }
 
         $login = $parts[0];
         $key   = $parts[1];
+        
+        $expectedKey = env('PAYME_MERCHANT_KEY');
+        
+        if ($login !== 'Paycom' || $key !== $expectedKey) {
+            Log::channel('user')->warning("[PAYME DEBUG] auth failed. Sent login='{$login}', expected='Paycom'. Key length received=" . strlen($key) . ", expected length=" . (is_string($expectedKey) ? strlen($expectedKey) : 'NULL'));
+            return false;
+        }
 
-        return $login === 'Paycom' && $key === env('PAYME_MERCHANT_KEY');
+        return true;
     }
 
     private function checkPerformTransaction($params, $id)
