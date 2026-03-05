@@ -249,7 +249,32 @@ class PaymeController extends Controller
                 ]);
             }
 
-            // Different transaction — reject (order is busy)
+            // Different transaction ID — check if old transaction is expired (12-hour timeout)
+            $oldCreateTime = $payment->metadata['payme_create_time'] ?? 0;
+            $timeout = 43200000; // 12 hours in milliseconds
+            $isExpired = ($time - $oldCreateTime) > $timeout;
+
+            if ($payment->status === Payment::PENDING && $isExpired) {
+                // Old transaction expired — cancel it, create new one
+                $metadata = $payment->metadata ?? [];
+                $metadata['payme_id'] = $paymeId;
+                $metadata['payme_create_time'] = $time;
+                unset($metadata['payme_cancel_time'], $metadata['payme_cancel_reason']);
+                $payment->metadata = $metadata;
+                $payment->save();
+
+                return response()->json([
+                    'id'     => $id,
+                    'result' => [
+                        'create_time' => $time,
+                        'transaction' => (string) $payment->id,
+                        'state'       => self::STATE_CREATED,
+                    ],
+                    'error' => null,
+                ]);
+            }
+
+            // Not expired — reject
             return $this->errorResponse(self::ERROR_ORDER_NOT_FOUND, 'Order is busy with another transaction', $id);
         }
 
