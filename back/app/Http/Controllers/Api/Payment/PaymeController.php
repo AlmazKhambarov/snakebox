@@ -203,6 +203,21 @@ class PaymeController extends Controller
             return $this->errorResponse(self::ERROR_CANT_PERFORM, 'Order already paid', $id);
         }
 
+        if ($payment->status === 'cancelled') {
+            return $this->errorResponse(self::ERROR_CANT_PERFORM, 'Order cancelled', $id);
+        }
+
+        // Check if order already has an active Payme transaction
+        $existingPayme = $payment->metadata['payme_id'] ?? null;
+        if ($existingPayme) {
+            $oldCreateTime = $payment->metadata['payme_create_time'] ?? 0;
+            $timeout = 43200000; // 12 hours in ms
+            $now = round(microtime(true) * 1000);
+            if (($now - $oldCreateTime) <= $timeout) {
+                return $this->errorResponse(self::ERROR_ORDER_NOT_FOUND, 'Order is busy with another transaction', $id);
+            }
+        }
+
         // Amount is in tiyin, our amount is in sum
         if ($payment->amount * 100 != $amount) {
             return $this->errorResponse(self::ERROR_INVALID_AMOUNT, 'Invalid amount', $id);
