@@ -3,69 +3,28 @@
         <LoadingSpinner v-if="isLoading" text="Загрузка кейса..." />
         <template v-else>
         <div class="case__top-inner">
-            <div
-                v-show="state === 'default'"
-                class="case__overlay"
-                style="z-index: 5"
-                x-ref="overlay"
-            >
-                <img
-                    :src="box.image"
-                    alt="Картинка кейса"
-                    class="case__overlay-case"
-                    loading="lazy"
-                    decoding="async"
-                />
-            </div>
-            <div v-show="state !== 'opened'" class="case__slider">
-                <div class="case__slider-one" style="" x-ref="slider">
-                    <div class="case__slider-cursor"></div>
-                    <div class="case__slider-wrapp">
-                        <div class="case__slider-outer">
-                            <div class="case__slider-items" ref="rouletteList">
+            <div v-show="state !== 'opened'" class="case__slider multi">
+                <div class="case__slider-multi">
+                    <div v-for="(list, listIdx) in rouletteItems" :key="listIdx" class="multi-roulette-column">
+                        <div v-show="state === 'default'" class="multi-roulette-overlay">
+                            <img :src="box.image" alt="box" />
+                        </div>
+                        <div class="case__slider-cursor horizontal"></div>
+                        <div class="multi-roulette-wrapp">
+                            <div class="multi-roulette-inner" ref="rouletteList">
                                 <div
-                                    class="item"
-                                    v-for="(rouletteItem, idx) in rouletteItems"
+                                    class="item vertical"
+                                    v-for="(rouletteItem, idx) in list"
                                     :key="idx"
                                     :data-index="idx"
-                                    :class="
-                                        getItemRarityClass(rouletteItem.rarity)
-                                    "
+                                    :class="getItemRarityClass(rouletteItem.rarity)"
                                 >
                                     <div class="item__inner">
-                                        <div class="item__top"></div>
                                         <div class="item__center">
-                                            <img
-                                                :src="rouletteItem.image"
-                                                class="item__image"
-                                                alt="skin"
-                                            />
-                                            <div
-                                                class="icon item__center-snake"
-                                                style="
-                                                    mask-image: url('/assets/icons/snake.svg');
-                                                "
-                                            ></div>
-                                        </div>
-                                        <div class="item__bottom">
-                                            <div class="item__model">
-                                                {{ rouletteItem.weapon }}
-                                            </div>
-                                            <div class="item__name">
-                                                {{ rouletteItem.skin_name }}
-                                            </div>
-                                            <div class="item__quality">
-                                                {{ rouletteItem.quality }}
-                                            </div>
+                                            <img :src="rouletteItem.image" class="item__image" alt="skin" />
                                         </div>
                                     </div>
-                                    <img
-                                        :src="`/images/case/shadow-${getItemRarityClass(
-                                            rouletteItem.rarity
-                                        )}.webp`"
-                                        class="item__rarity-img"
-                                        alt="rarity"
-                                    />
+                                    <img :src="`/images/case/shadow-${getItemRarityClass(rouletteItem.rarity)}.webp`" class="item__rarity-img" alt="rarity" />
                                 </div>
                             </div>
                         </div>
@@ -76,7 +35,6 @@
                 v-if="state === 'opened'"
                 class="case__win-items"
                 x-ref="winners"
-                style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;"
             >
                 <div class="case__win-item" v-for="(winItem, index) in winItems" :key="index">
                     <div class="item" :class="getItemRarityClass(winItem.rarity)">
@@ -354,7 +312,7 @@ export default {
             state: "default", // default - перед открытием, Opening - во время открытия, Opened - после открытия
             speed: 1,
 
-            rouletteItems: [],
+            rouletteItems: [], // Будет массивом массивов: [[item, item...], [item, item...]]
             winItems: [],
 
             screenWidth: window.innerWidth,
@@ -372,9 +330,12 @@ export default {
             immediate: true,
             handler(val) {
                 if (val?.length) {
-                    this.initRoulette();
+                    this.initRoulette(this.selectedCount);
                 }
             },
+        },
+        selectedCount(val) {
+            this.initRoulette(val);
         },
     },
     mounted() {
@@ -426,12 +387,12 @@ export default {
                     return;
                 }
                 this.$playSound("/sounds/click.mp3");
-                this.initRoulette();
+                this.initRoulette(count);
                 this.state = "opening";
                 this.winItems = data.winItems;
                 
-                // Показываем в рулетке первый выпавший предмет
-                this.setWinItem(data.winItems[0]);
+                // Показываем в рулетках выпавшие предметы
+                this.setWinItems(data.winItems);
 
                 this.$nextTick(() => {
                     const duration = this.fastOpen ? 2 : 8;
@@ -449,85 +410,88 @@ export default {
         randomInteger(min, max) {
             return Math.floor(Math.random() * (max - min + 1)) + min;
         },
-        initRoulette() {
-            if (!this.caseContent?.length) {
-                console.warn("caseContent пуст или не передан");
-                return;
-            }
-            this.rouletteItems = Array.from({ length: 45 }, () => {
-                const randomIndex = this.randomInteger(
-                    0,
-                    this.caseContent.length - 1
-                );
+        initRoulette(count = 1) {
+            if (!this.caseContent?.length) return;
+            
+            const generateList = () => Array.from({ length: 45 }, () => {
+                const randomIndex = this.randomInteger(0, this.caseContent.length - 1);
                 return this.caseContent[randomIndex];
             });
+
+            if (count === 1) {
+                this.rouletteItems = [generateList()];
+            } else {
+                this.rouletteItems = Array.from({ length: count }, () => generateList());
+            }
         },
-        setWinItem(winItem) {
-            this.rouletteItems = this.rouletteItems.map((item, i) =>
-                i === 35 ? winItem : item
-            );
+        setWinItems(winItems) {
+            // winItems - это массив выпавших предметов
+            this.rouletteItems = this.rouletteItems.map((list, listIdx) => {
+                return list.map((item, i) => i === 35 ? winItems[listIdx] : item);
+            });
         },
 
         resetTransform() {
-            const list = this.$refs.rouletteList;
-            if (!list) return;
-            // Останавливаем все анимации для этого элемента
-            gsap.killTweensOf(list);
-            gsap.set(list, { x: 0 });
+            const lists = Array.isArray(this.$refs.rouletteList) 
+                ? this.$refs.rouletteList 
+                : [this.$refs.rouletteList];
+                
+            lists.forEach(list => {
+                if (!list) return;
+                gsap.killTweensOf(list);
+                gsap.set(list, { x: 0, y: 0 });
+            });
             this.showWinNow = false;
         },
         animateRoulette(winItemIndex, duration = 8.5) {
             this.resetTransform();
 
-            const list = this.$refs.rouletteList;
-            if (!list) return;
+            const lists = Array.isArray(this.$refs.rouletteList) 
+                ? this.$refs.rouletteList 
+                : [this.$refs.rouletteList];
 
-            // Дополнительная проверка остановки анимаций
-            gsap.killTweensOf(list);
+            lists.forEach((list, listIdx) => {
+                if (!list) return;
 
-            const items = list.children;
-            if (!items || !items.length) return;
+                const items = list.children;
+                if (!items || !items.length) return;
 
-            const winItem = items[winItemIndex];
-            if (!winItem) return;
+                const winItem = items[winItemIndex];
+                if (!winItem) return;
 
-            const cardWidth = winItem.offsetWidth;
-            const containerWidth = list.parentElement.offsetWidth;
-            const winItemOffset = winItem.offsetLeft;
+                // Vertical Logic (Unified for x1-x5)
+                const cardHeight = winItem.offsetHeight;
+                const containerHeight = list.parentElement.offsetHeight;
+                const winItemOffset = winItem.offsetTop;
 
-            const finalTarget = -(
-                winItemOffset -
-                (containerWidth / 2 - cardWidth / 2)
-            );
+                const finalTarget = -(winItemOffset - (containerHeight / 2 - cardHeight / 2));
+                const randomOffset = Math.floor(Math.random() * 40) - 20;
+                const mainTarget = finalTarget + randomOffset;
 
-            const randomOffset = Math.floor(Math.random() * 60) - 30;
-            const mainTarget = finalTarget + randomOffset;
+                let prevIndex = -1;
+                const tl = gsap.timeline({
+                    delay: listIdx * 0.1, // Slight stagger for better feeling
+                    onUpdate: () => {
+                        const currentY = gsap.getProperty(list, "y");
+                        const index = Math.floor(Math.abs(currentY) / cardHeight);
+                        if (index !== prevIndex) {
+                            prevIndex = index;
+                            // Only play tick for the first column to avoid sound mess
+                            if (listIdx === 0) this.playTick();
+                        }
+                    },
+                });
 
-            let prevIndex = -1;
-
-            const tl = gsap.timeline({
-                onUpdate: () => {
-                    const currentX = gsap.getProperty(list, "x");
-                    const index = Math.floor(Math.abs(currentX) / cardWidth);
-
-                    if (index !== prevIndex) {
-                        prevIndex = index;
-                        this.playTick();
-                    }
-                },
-            });
-
-            tl.to(list, {
-                x: mainTarget,
-                duration: duration,
-                ease: "power2.out",
-                force3D: true,
-            });
-
-            tl.to(list, {
-                x: finalTarget,
-                duration: 1,
-                ease: "power2.out",
+                tl.to(list, {
+                    y: mainTarget,
+                    duration: duration,
+                    ease: "power3.out",
+                    force3D: true,
+                }).to(list, {
+                    y: finalTarget,
+                    duration: 1,
+                    ease: "power2.out",
+                });
             });
         },
         toggleCookie(key) {
@@ -539,7 +503,7 @@ export default {
             this.rouletteItems = [];
             this.winItems = [];
             this.showWinNow = false;
-            this.initRoulette();
+            this.initRoulette(this.selectedCount);
         },
         async sellItem(liveId) {
             await request("POST", "/case/sell/item", {
@@ -603,5 +567,204 @@ export default {
 
 .page__controls-main-btn {
     width: 100%;
+}
+
+/* Multi-Roulette Styles */
+.case__slider.multi {
+    height: 150px; /* Absolute minimum height */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 5px;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+    margin: 5px auto;
+    max-width: 1000px;
+    position: relative;
+    overflow: hidden;
+}
+
+.case__slider-multi {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+}
+
+.multi-roulette-column {
+    position: relative;
+    flex: 0 1 180px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.multi-roulette-column:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.multi-roulette-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+    background: rgba(20, 20, 27, 0.99);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+}
+
+.multi-roulette-overlay img {
+    max-width: 50%; 
+    max-height: 50%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.5));
+}
+
+.multi-roulette-wrapp {
+    height: 100%;
+    width: 100%;
+    position: relative;
+}
+
+.multi-roulette-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.case__win-items {
+    display: flex;
+    flex-wrap: nowrap; /* Single line as requested */
+    justify-content: center;
+    gap: 15px;
+    width: 100%;
+    overflow-x: auto; /* Allow scroll if too many */
+    padding: 20px 0;
+}
+
+.case__win-item {
+    flex: 0 1 200px;
+    min-width: 150px;
+    transition: transform 0.3s ease;
+}
+
+.case__win-item:hover {
+    transform: translateY(-5px);
+}
+
+.case__win-item .item {
+    width: 100%;
+}
+
+.item.vertical {
+    width: 100%;
+    min-height: 50px; /* Shrunk to 50px */
+    height: 50px;
+    margin: 1px 0;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.item.vertical .item__inner {
+    width: 75%;
+    height: 75%;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.item.vertical .item__image {
+    max-width: 65%;
+    max-height: 65%;
+    object-fit: contain;
+}
+
+.case__slider-cursor.horizontal {
+    width: 100%;
+    height: 2px;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--primary-color, #ff9900);
+    box-shadow: 0 0 8px var(--primary-color, #ff9900);
+    z-index: 10;
+}
+
+/* Mobile responsive for multi-roulette */
+@media (max-width: 768px) {
+    .case__slider.multi {
+        height: 130px; /* Absolute minimum on tablet */
+        padding: 3px;
+    }
+    
+    .case__slider-multi {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 2px;
+        padding: 0 1px;
+    }
+    
+    .multi-roulette-column {
+        height: 100%;
+    }
+
+    .case__win-items {
+        gap: 8px;
+        padding: 10px 0;
+    }
+
+    .case__win-item {
+        min-width: 100px;
+        flex: 0 1 120px;
+    }
+
+    .item.vertical {
+        min-height: 45px; 
+        height: 45px;
+    }
+
+    .item.vertical .item__inner {
+        width: 85%;
+        height: 85%;
+    }
+}
+
+@media (max-width: 480px) {
+    .case__slider.multi {
+        height: 110px; /* Absolute minimum on phones */
+        border-radius: 8px;
+    }
+
+    .item.vertical {
+        min-height: 40px;
+        height: 40px;
+    }
+    
+    .multi-roulette-overlay img {
+        max-width: 60%;
+    }
+
+    .case__win-items {
+        gap: 5px;
+        padding: 5px 0;
+    }
+
+    .case__win-item {
+        min-width: 80px;
+        flex: 0 1 100px;
+    }
 }
 </style>
