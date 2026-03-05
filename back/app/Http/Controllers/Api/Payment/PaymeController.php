@@ -123,15 +123,20 @@ class PaymeController extends Controller
      */
     public function callback(Request $request)
     {
-        // Authenticate request
-        $auth = $request->header('Authorization');
-        if (!$this->authenticate($auth)) {
-            return $this->errorResponse(self::ERROR_AUTH, 'Unauthorized', null);
-        }
-
+        $id     = $request->input('id');
         $method = $request->input('method');
         $params = $request->input('params');
-        $id     = $request->input('id');
+
+        // Authenticate request
+        $auth = $request->header('Authorization');
+        
+        // Log auth attempt (for debugging - remove in production or use sensitive logging)
+        Log::channel('payment_payme')->info("Payme callback attempt: method={$method}, id={$id}, auth_header=" . ($auth ?? 'MISSING'));
+
+        if (!$this->authenticate($auth)) {
+            Log::channel('payment_payme')->warning("Payme callback: Authentication failed for method={$method}, id={$id}");
+            return $this->errorResponse(self::ERROR_AUTH, 'Unauthorized', $id);
+        }
 
         Log::channel('payment_payme')->info("Payme callback: {$method}", $params ?? []);
 
