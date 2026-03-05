@@ -249,27 +249,8 @@ class PaymeController extends Controller
                 ]);
             }
 
-            // Different transaction ID — if payment is still pending, allow new transaction
-            if ($payment->status === Payment::PENDING) {
-                // Replace old unfinished transaction with new one
-                $metadata = $payment->metadata ?? [];
-                $metadata['payme_id'] = $paymeId;
-                $metadata['payme_create_time'] = $time;
-                $payment->metadata = $metadata;
-                $payment->save();
-
-                return response()->json([
-                    'id'     => $id,
-                    'result' => [
-                        'create_time' => $time,
-                        'transaction' => (string) $payment->id,
-                        'state'       => self::STATE_CREATED,
-                    ],
-                    'error' => null,
-                ]);
-            }
-
-            return $this->errorResponse(self::ERROR_CANT_PERFORM, 'Transaction already exists with different id', $id);
+            // Different transaction — reject (order is busy)
+            return $this->errorResponse(self::ERROR_ORDER_NOT_FOUND, 'Order is busy with another transaction', $id);
         }
 
         if ($payment->status === Payment::PAID) {
