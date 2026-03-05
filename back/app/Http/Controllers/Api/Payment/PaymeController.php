@@ -349,7 +349,11 @@ class PaymeController extends Controller
             return $this->errorResponse(self::ERROR_INTERNAL, 'User not found', $id);
         }
 
-        $amount = $payment->amount * 100; // Convert to internal currency (kopecks/tiyin)
+        // Conversion rate: 5000 UZS = 32 RUB (1 RUB = 156.25 UZS)
+        $conversionRate = 156.25;
+        $amountInRubCents = ($payment->amount * 100) / $conversionRate;
+        
+        $amount = $amountInRubCents;
 
         // Promo code handling
         if ($payment->promocode_id) {
@@ -366,10 +370,10 @@ class PaymeController extends Controller
             }
         }
 
-        $event_points = $payment->amount * 0.1;
+        $event_points = ($payment->amount / $conversionRate) * 0.1;
         $user->increment('balance', $amount);
         $user->increment('event_points', $event_points);
-        $user->increment('total_deposited', $payment->amount * 100);
+        $user->increment('total_deposited', $amountInRubCents);
 
         $performTime = now()->timestamp * 1000;
         $metadata = $payment->metadata ?? [];
@@ -392,9 +396,9 @@ class PaymeController extends Controller
                     1 => 0.5, 2 => 1, 3 => 1.5, 4 => 2, 5 => 2.5, default => 0,
                 };
 
-                if (!$hasOtherDeposits && $payment->amount >= 1000) {
+                if (!$hasOtherDeposits && ($payment->amount / $conversionRate) >= 1000) {
                     $fixedBonus   = 2500;
-                    $percentBonus = ($payment->amount * 100) * ($value / 100);
+                    $percentBonus = $amountInRubCents * ($value / 100);
                     $totalBonus   = $fixedBonus + $percentBonus;
                     $referrer->update([
                         'balance'          => $referrer->balance + $fixedBonus,
@@ -405,7 +409,7 @@ class PaymeController extends Controller
                         'user_id'        => $referrer->id,
                         'referral_id'    => $user->id,
                         'amount'         => $totalBonus,
-                        'deposit_amount' => $payment->amount * 100,
+                        'deposit_amount' => $amountInRubCents,
                         'percentage'     => $value,
                         'type'           => 'payme',
                         'description'    => 'Бонус 25₽ и ' . $value . '% за первый депозит',
@@ -413,7 +417,7 @@ class PaymeController extends Controller
                         'updated_at'     => now(),
                     ]);
                 } else {
-                    $percentBonus = ($payment->amount * 100) * ($value / 100);
+                    $percentBonus = $amountInRubCents * ($value / 100);
                     $referrer->update([
                         'balance'          => $referrer->balance + $percentBonus,
                         'referral_balance' => $referrer->referral_balance + $percentBonus,
@@ -423,7 +427,7 @@ class PaymeController extends Controller
                         'user_id'        => $referrer->id,
                         'referral_id'    => $user->id,
                         'amount'         => $percentBonus,
-                        'deposit_amount' => $payment->amount * 100,
+                        'deposit_amount' => $amountInRubCents,
                         'percentage'     => $value,
                         'type'           => 'payme',
                         'description'    => $value . '% от депозита',

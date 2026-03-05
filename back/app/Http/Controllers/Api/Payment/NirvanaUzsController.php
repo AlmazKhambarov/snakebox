@@ -168,7 +168,12 @@ class NirvanaUzsController extends Controller
             if (!$user) return response('User not found', 200);
 
             $receivedAmount = $body['amountFiatReceived'] ?? $payment->amount;
-            $amount = $receivedAmount * 100;
+            
+            // Conversion rate: 5000 UZS = 32 RUB (1 RUB = 156.25 UZS)
+            $conversionRate = 156.25;
+            $amountInRubCents = ($receivedAmount * 100) / $conversionRate;
+            
+            $amount = $amountInRubCents;
 
             // === Промокод ===
             if ($payment->promocode_id) {
@@ -185,10 +190,10 @@ class NirvanaUzsController extends Controller
                 }
             }
 
-            $event_points = $receivedAmount * 0.1;
+            $event_points = ($receivedAmount / $conversionRate) * 0.1;
             $user->increment('balance', $amount);
             $user->increment('event_points', $event_points);
-            $user->increment('total_deposited', $receivedAmount * 100);
+            $user->increment('total_deposited', $amountInRubCents);
 
             $payment->status = Payment::PAID;
             $payment->save();
@@ -207,9 +212,9 @@ class NirvanaUzsController extends Controller
                         1 => 0.5, 2 => 1, 3 => 1.5, 4 => 2, 5 => 2.5, default => 0,
                     };
 
-                    if (!$hasOtherDeposits && $receivedAmount >= 1000) {
+                    if (!$hasOtherDeposits && ($receivedAmount / $conversionRate) >= 1000) {
                         $fixedBonus   = 2500;
-                        $percentBonus = ($receivedAmount * 100) * ($value / 100);
+                        $percentBonus = $amountInRubCents * ($value / 100);
                         $totalBonus   = $fixedBonus + $percentBonus;
                         $referrer->update([
                             'balance'          => $referrer->balance + $fixedBonus,
@@ -220,7 +225,7 @@ class NirvanaUzsController extends Controller
                             'user_id'        => $referrer->id,
                             'referral_id'    => $user->id,
                             'amount'         => $totalBonus,
-                            'deposit_amount' => $receivedAmount * 100,
+                            'deposit_amount' => $amountInRubCents,
                             'percentage'     => $value,
                             'type'           => 'nirvana_uzs',
                             'description'    => 'Бонус 25₽ и ' . $value . '% за первый депозит',
@@ -228,7 +233,7 @@ class NirvanaUzsController extends Controller
                             'updated_at'     => now(),
                         ]);
                     } else {
-                        $percentBonus = ($receivedAmount * 100) * ($value / 100);
+                        $percentBonus = $amountInRubCents * ($value / 100);
                         $referrer->update([
                             'balance'          => $referrer->balance + $percentBonus,
                             'referral_balance' => $referrer->referral_balance + $percentBonus,
@@ -238,7 +243,7 @@ class NirvanaUzsController extends Controller
                             'user_id'        => $referrer->id,
                             'referral_id'    => $user->id,
                             'amount'         => $percentBonus,
-                            'deposit_amount' => $receivedAmount * 100,
+                            'deposit_amount' => $amountInRubCents,
                             'percentage'     => $value,
                             'type'           => 'nirvana_uzs',
                             'description'    => $value . '% от депозита',
