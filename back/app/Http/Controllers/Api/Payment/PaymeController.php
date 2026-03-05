@@ -236,20 +236,40 @@ class PaymeController extends Controller
         $existingPayme = $payment->metadata['payme_id'] ?? null;
 
         if ($existingPayme) {
-            if ($existingPayme !== $paymeId) {
-                return $this->errorResponse(self::ERROR_CANT_PERFORM, 'Transaction already exists with different id', $id);
+            if ($existingPayme === $paymeId) {
+                // Same transaction — return existing
+                return response()->json([
+                    'id'     => $id,
+                    'result' => [
+                        'create_time'  => $payment->metadata['payme_create_time'] ?? $time,
+                        'transaction'  => (string) $payment->id,
+                        'state'        => $this->getPaymeState($payment),
+                    ],
+                    'error' => null,
+                ]);
             }
 
-            // Return existing transaction
-            return response()->json([
-                'id'     => $id,
-                'result' => [
-                    'create_time'  => $payment->metadata['payme_create_time'] ?? $time,
-                    'transaction'  => (string) $payment->id,
-                    'state'        => $this->getPaymeState($payment),
-                ],
-                'error' => null,
-            ]);
+            // Different transaction ID — if payment is still pending, allow new transaction
+            if ($payment->status === Payment::PENDING) {
+                // Replace old unfinished transaction with new one
+                $metadata = $payment->metadata ?? [];
+                $metadata['payme_id'] = $paymeId;
+                $metadata['payme_create_time'] = $time;
+                $payment->metadata = $metadata;
+                $payment->save();
+
+                return response()->json([
+                    'id'     => $id,
+                    'result' => [
+                        'create_time' => $time,
+                        'transaction' => (string) $payment->id,
+                        'state'       => self::STATE_CREATED,
+                    ],
+                    'error' => null,
+                ]);
+            }
+
+            return $this->errorResponse(self::ERROR_CANT_PERFORM, 'Transaction already exists with different id', $id);
         }
 
         if ($payment->status === Payment::PAID) {
