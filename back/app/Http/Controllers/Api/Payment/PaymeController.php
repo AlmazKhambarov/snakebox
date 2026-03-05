@@ -203,7 +203,7 @@ class PaymeController extends Controller
             return $this->errorResponse(self::ERROR_CANT_PERFORM, 'Order already paid', $id);
         }
 
-        if ($payment->status === 'cancelled') {
+        if ($payment->status === Payment::CANCELLED) {
             return $this->errorResponse(self::ERROR_CANT_PERFORM, 'Order cancelled', $id);
         }
 
@@ -469,7 +469,7 @@ class PaymeController extends Controller
             $metadata['payme_cancel_time'] = $cancelTime;
             $metadata['payme_cancel_reason'] = $reason;
             $payment->metadata = $metadata;
-            $payment->status = 'cancelled';
+            $payment->status = Payment::CANCELLED;
             $payment->save();
 
             return response()->json([
@@ -488,7 +488,7 @@ class PaymeController extends Controller
         $metadata['payme_cancel_time'] = $cancelTime;
         $metadata['payme_cancel_reason'] = $reason;
         $payment->metadata = $metadata;
-        $payment->status = 'cancelled';
+        $payment->status = Payment::CANCELLED;
         $payment->save();
 
         return response()->json([
@@ -569,7 +569,7 @@ class PaymeController extends Controller
         return match ($payment->status) {
             Payment::PENDING   => self::STATE_CREATED,
             Payment::PAID      => self::STATE_COMPLETED,
-            'cancelled'        => isset($payment->metadata['payme_perform_time'])
+            Payment::CANCELLED => isset($payment->metadata['payme_perform_time'])
                                     ? self::STATE_CANCELLED_AFTER
                                     : self::STATE_CANCELLED,
             default            => self::STATE_CREATED,

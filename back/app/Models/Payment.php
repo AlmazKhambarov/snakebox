@@ -14,6 +14,7 @@ class Payment extends Model
 
     public const PENDING = 0;
     public const PAID = 1;
+    public const CANCELLED = 2;
     public const FAILED = 3;
 
     protected $guarded = [];
