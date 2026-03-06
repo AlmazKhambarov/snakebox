@@ -396,12 +396,13 @@ export default {
 
                 this.$nextTick(() => {
                     const duration = this.fastOpen ? 2 : 8;
-                    this.animateRoulette(25, duration);
+                    this.animateRoulette(18, duration);
                     
+                    const totalDuration = ((this.selectedCount - 1) * 1.5 + duration);
                     setTimeout(() => {
                         this.state = "opened";
                         this.$playSound("/sounds/contract-run.mp3");
-                    }, duration * 1000 + 500);
+                    }, totalDuration * 1000 + 500);
                 });
 
                 this.box.is_free = false;
@@ -413,7 +414,7 @@ export default {
         initRoulette(count = 1) {
             if (!this.caseContent?.length) return;
             
-            const generateList = () => Array.from({ length: 30 }, () => {
+            const generateList = () => Array.from({ length: 22 }, () => {
                 const randomIndex = this.randomInteger(0, this.caseContent.length - 1);
                 return this.caseContent[randomIndex];
             });
@@ -427,7 +428,7 @@ export default {
         setWinItems(winItems) {
             // winItems - это массив выпавших предметов
             this.rouletteItems = this.rouletteItems.map((list, listIdx) => {
-                return list.map((item, i) => i === 25 ? winItems[listIdx] : item);
+                return list.map((item, i) => i === 18 ? winItems[listIdx] : item);
             });
         },
 
@@ -470,14 +471,14 @@ export default {
 
                 let prevIndex = -1;
                 const tl = gsap.timeline({
-                    delay: listIdx * 0.1, // Slight stagger for better feeling
+                    delay: listIdx * 1.5, // sequential flow (1.5s gap between starts)
                     onUpdate: () => {
                         const currentY = gsap.getProperty(list, "y");
                         const index = Math.floor(Math.abs(currentY) / cardHeight);
                         if (index !== prevIndex) {
                             prevIndex = index;
-                            // Only play tick for the first column to avoid sound mess
-                            if (listIdx === 0) this.playTick();
+                            // Play tick for each column since they are sequential now
+                            this.playTick();
                         }
                     },
                 });
@@ -486,11 +487,12 @@ export default {
                     y: mainTarget,
                     duration: duration,
                     ease: "power3.out",
-                    force3D: true,
+                    force3D: true, // Hardware acceleration
                 }).to(list, {
                     y: finalTarget,
                     duration: 1,
                     ease: "power2.out",
+                    force3D: true,
                 });
             });
         },
