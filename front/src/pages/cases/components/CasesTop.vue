@@ -9,7 +9,7 @@
                         <div v-show="state === 'default'" class="multi-roulette-overlay">
                             <img :src="box.image" alt="box" />
                         </div>
-                        <div class="case__slider-cursor horizontal"></div>
+                        <div v-show="state !== 'default'" class="case__slider-cursor horizontal"></div>
                         <div class="multi-roulette-wrapp">
                             <div class="multi-roulette-inner" ref="rouletteList">
                                 <div
@@ -396,7 +396,7 @@ export default {
 
                 this.$nextTick(() => {
                     const duration = this.fastOpen ? 2 : 8;
-                    this.animateRoulette(35, duration);
+                    this.animateRoulette(25, duration);
                     
                     setTimeout(() => {
                         this.state = "opened";
@@ -413,7 +413,7 @@ export default {
         initRoulette(count = 1) {
             if (!this.caseContent?.length) return;
             
-            const generateList = () => Array.from({ length: 45 }, () => {
+            const generateList = () => Array.from({ length: 30 }, () => {
                 const randomIndex = this.randomInteger(0, this.caseContent.length - 1);
                 return this.caseContent[randomIndex];
             });
@@ -427,7 +427,7 @@ export default {
         setWinItems(winItems) {
             // winItems - это массив выпавших предметов
             this.rouletteItems = this.rouletteItems.map((list, listIdx) => {
-                return list.map((item, i) => i === 35 ? winItems[listIdx] : item);
+                return list.map((item, i) => i === 25 ? winItems[listIdx] : item);
             });
         },
 
@@ -571,22 +571,22 @@ export default {
 
 /* Multi-Roulette Styles */
 .case__slider.multi {
-    height: 150px; /* Absolute minimum height */
+    height: 500px; /* Increased to fit 160px items */
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 5px;
+    padding: 15px;
     background: rgba(0, 0, 0, 0.15);
-    border-radius: 10px;
-    margin: 5px auto;
-    max-width: 1000px;
+    border-radius: 20px;
+    margin: 15px auto;
+    max-width: 1400px; /* Increased to fit multiple 208px columns */
     position: relative;
     overflow: hidden;
 }
 
 .case__slider-multi {
     display: flex;
-    gap: 4px;
+    gap: 12px;
     width: 100%;
     height: 100%;
     justify-content: center;
@@ -594,10 +594,10 @@ export default {
 
 .multi-roulette-column {
     position: relative;
-    flex: 0 1 180px;
+    flex: 0 0 208px; /* Fixed width as requested */
     height: 100%;
     background: rgba(255, 255, 255, 0.02);
-    border-radius: 6px;
+    border-radius: 12px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.05);
     transition: all 0.3s ease;
@@ -622,10 +622,10 @@ export default {
 }
 
 .multi-roulette-overlay img {
-    max-width: 50%; 
-    max-height: 50%;
+    max-width: 80%; 
+    max-height: 80%;
     object-fit: contain;
-    filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.5));
+    filter: drop-shadow(0 0 15px rgba(0, 0, 0, 0.5));
 }
 
 .multi-roulette-wrapp {
@@ -639,21 +639,23 @@ export default {
     flex-direction: column;
     align-items: center;
     width: 100%;
+    will-change: transform; /* Hardware acceleration */
+    backface-visibility: hidden;
 }
 
 .case__win-items {
     display: flex;
-    flex-wrap: nowrap; /* Single line as requested */
+    flex-wrap: nowrap;
     justify-content: center;
-    gap: 15px;
+    gap: 20px;
     width: 100%;
-    overflow-x: auto; /* Allow scroll if too many */
-    padding: 20px 0;
+    overflow-x: auto;
+    padding: 30px 0;
 }
 
 .case__win-item {
-    flex: 0 1 200px;
-    min-width: 150px;
+    flex: 0 0 260px;
+    min-width: 220px;
     transition: transform 0.3s ease;
 }
 
@@ -667,57 +669,62 @@ export default {
 
 .item.vertical {
     width: 100%;
-    min-height: 50px; /* Shrunk to 50px */
-    height: 50px;
-    margin: 1px 0;
+    min-height: 160px; /* Fixed height as requested */
+    height: 160px;
+    margin: 3px 0;
     flex-shrink: 0;
     display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
     transition: all 0.3s ease;
+    transform: translateZ(0); /* Hardware acceleration */
+    backface-visibility: hidden;
 }
 
 .item.vertical .item__inner {
-    width: 75%;
-    height: 75%;
+    width: 90%;
+    height: 90%;
     background: rgba(255, 255, 255, 0.03);
-    border-radius: 6px;
+    border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .item.vertical .item__image {
-    max-width: 65%;
-    max-height: 65%;
+    max-width: 90%;
+    max-height: 90%;
     object-fit: contain;
 }
 
 .case__slider-cursor.horizontal {
     width: 100%;
-    height: 2px;
+    height: 3px;
     left: 0;
     top: 50%;
     transform: translateY(-50%);
     background: var(--primary-color, #ff9900);
-    box-shadow: 0 0 8px var(--primary-color, #ff9900);
+    box-shadow: 0 0 12px var(--primary-color, #ff9900);
     z-index: 10;
 }
 
 /* Mobile responsive for multi-roulette */
 @media (max-width: 768px) {
     .case__slider.multi {
-        height: 130px; /* Absolute minimum on tablet */
-        padding: 3px;
+        height: 350px; /* Reduced for tablet */
+        padding: 10px;
     }
     
     .case__slider-multi {
         display: flex;
         flex-wrap: nowrap;
-        gap: 2px;
-        padding: 0 1px;
+        gap: 6px;
+        padding: 0 5px;
+        overflow-x: hidden; /* Prevent scroll, fit everything */
     }
     
     .multi-roulette-column {
+        flex: 1 1 0; /* Equal width to fit all */
+        min-width: 0;
         height: 100%;
     }
 
@@ -727,44 +734,48 @@ export default {
     }
 
     .case__win-item {
-        min-width: 100px;
-        flex: 0 1 120px;
+        min-width: 120px;
+        flex: 0 1 150px;
     }
 
     .item.vertical {
-        min-height: 45px; 
-        height: 45px;
+        min-height: 100px; /* Smaller for tablet */
+        height: 100px;
     }
 
     .item.vertical .item__inner {
-        width: 85%;
-        height: 85%;
+        width: 92%;
+        height: 92%;
     }
 }
 
 @media (max-width: 480px) {
     .case__slider.multi {
-        height: 110px; /* Absolute minimum on phones */
-        border-radius: 8px;
+        height: 250px; /* Compact for phones */
+        border-radius: 12px;
     }
 
     .item.vertical {
-        min-height: 40px;
-        height: 40px;
+        min-height: 60px; /* Even smaller for phones */
+        height: 60px;
     }
     
-    .multi-roulette-overlay img {
-        max-width: 60%;
-    }
-
     .case__win-items {
         gap: 5px;
         padding: 5px 0;
     }
 
     .case__win-item {
-        min-width: 80px;
-        flex: 0 1 100px;
+        min-width: 90px;
+        flex: 0 1 110px;
+    }
+
+    .multi-roulette-overlay img {
+        max-width: 70%;
+    }
+
+    .case__slider-multi {
+        gap: 4px;
     }
 }
 </style>
