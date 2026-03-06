@@ -5,18 +5,34 @@
         <div class="case__top-inner">
             <div v-show="state !== 'opened'" class="case__slider multi">
                 <div class="case__slider-multi">
-                    <div v-for="(list, listIdx) in rouletteItems" :key="listIdx" class="multi-roulette-column">
+                    <div class="multi-roulette-column single-drum">
+                        <!-- Background Decoration -->
+                        <div class="multi-roulette-bg-image">
+                            <img :src="box.image" alt="box-bg" />
+                        </div>
+                        
+                        <!-- Fixed Center Case (Overlay when not opening) -->
                         <div v-show="state === 'default'" class="multi-roulette-overlay">
                             <img :src="box.image" alt="box" />
                         </div>
-                        <div v-show="state !== 'default'" class="case__slider-cursor horizontal"></div>
+
+                        <!-- Side Faders -->
+                        <div class="multi-roulette-fader left"></div>
+                        <div class="multi-roulette-fader right"></div>
+
+                        <!-- Current Item Glow -->
+                        <div class="multi-roulette-glow" v-show="state === 'opening'"></div>
+                        
+                        <div v-show="state === 'opening'" class="case__slider-cursor vertical">
+                            <div class="cursor-light"></div>
+                        </div>
+
                         <div class="multi-roulette-wrapp">
-                            <div class="multi-roulette-inner" ref="rouletteList">
+                            <div class="multi-roulette-inner horizontal" ref="rouletteList" v-if="rouletteItems[0]">
                                 <div
-                                    class="item vertical"
-                                    v-for="(rouletteItem, idx) in list"
+                                    class="item horizontal"
+                                    v-for="(rouletteItem, idx) in rouletteItems[0]"
                                     :key="idx"
-                                    :data-index="idx"
                                     :class="getItemRarityClass(rouletteItem.rarity)"
                                 >
                                     <div class="item__inner">
@@ -24,7 +40,10 @@
                                             <img :src="rouletteItem.image" class="item__image" alt="skin" />
                                         </div>
                                     </div>
-                                    <img :src="`/images/case/shadow-${getItemRarityClass(rouletteItem.rarity)}.webp`" class="item__rarity-img" alt="rarity" />
+                                    <div class="item__info">
+                                        <div class="item__name">{{ rouletteItem.name }}</div>
+                                        <div class="item__subname">{{ rouletteItem.subname }}</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -398,11 +417,10 @@ export default {
                     const duration = this.fastOpen ? 2 : 8;
                     this.animateRoulette(18, duration);
                     
-                    const totalDuration = ((this.selectedCount - 1) * 1.5 + duration);
                     setTimeout(() => {
                         this.state = "opened";
                         this.$playSound("/sounds/contract-run.mp3");
-                    }, totalDuration * 1000 + 500);
+                    }, duration * 1000 + 500);
                 });
 
                 this.box.is_free = false;
@@ -411,7 +429,7 @@ export default {
         randomInteger(min, max) {
             return Math.floor(Math.random() * (max - min + 1)) + min;
         },
-        initRoulette(count = 1) {
+        initRoulette() {
             if (!this.caseContent?.length) return;
             
             const generateList = () => Array.from({ length: 22 }, () => {
@@ -419,17 +437,14 @@ export default {
                 return this.caseContent[randomIndex];
             });
 
-            if (count === 1) {
-                this.rouletteItems = [generateList()];
-            } else {
-                this.rouletteItems = Array.from({ length: count }, () => generateList());
-            }
+            this.rouletteItems = [generateList()];
         },
         setWinItems(winItems) {
             // winItems - это массив выпавших предметов
-            this.rouletteItems = this.rouletteItems.map((list, listIdx) => {
-                return list.map((item, i) => i === 18 ? winItems[listIdx] : item);
-            });
+            // Для одиночного барабана показываем первый предмет из списка
+            if (this.rouletteItems[0]) {
+                this.rouletteItems[0] = this.rouletteItems[0].map((item, i) => i === 18 ? winItems[0] : item);
+            }
         },
 
         resetTransform() {
@@ -447,53 +462,46 @@ export default {
         animateRoulette(winItemIndex, duration = 8.5) {
             this.resetTransform();
 
-            const lists = Array.isArray(this.$refs.rouletteList) 
-                ? this.$refs.rouletteList 
-                : [this.$refs.rouletteList];
+            const list = this.$refs.rouletteList;
+            if (!list) return;
 
-            lists.forEach((list, listIdx) => {
-                if (!list) return;
+            const items = list.children;
+            if (!items || !items.length) return;
 
-                const items = list.children;
-                if (!items || !items.length) return;
+            const winItem = items[winItemIndex];
+            if (!winItem) return;
 
-                const winItem = items[winItemIndex];
-                if (!winItem) return;
+            // Horizontal Logic 
+            const cardWidth = winItem.offsetWidth;
+            const containerWidth = list.parentElement.offsetWidth;
+            const winItemOffset = winItem.offsetLeft;
 
-                // Vertical Logic (Unified for x1-x5)
-                const cardHeight = winItem.offsetHeight;
-                const containerHeight = list.parentElement.offsetHeight;
-                const winItemOffset = winItem.offsetTop;
+            const finalTarget = -(winItemOffset - (containerWidth / 2 - cardWidth / 2));
+            const randomOffset = Math.floor(Math.random() * 40) - 20;
+            const mainTarget = finalTarget + randomOffset;
 
-                const finalTarget = -(winItemOffset - (containerHeight / 2 - cardHeight / 2));
-                const randomOffset = Math.floor(Math.random() * 40) - 20;
-                const mainTarget = finalTarget + randomOffset;
+            let prevIndex = -1;
+            const tl = gsap.timeline({
+                onUpdate: () => {
+                    const currentX = gsap.getProperty(list, "x");
+                    const index = Math.floor(Math.abs(currentX) / cardWidth);
+                    if (index !== prevIndex) {
+                        prevIndex = index;
+                        this.playTick();
+                    }
+                },
+            });
 
-                let prevIndex = -1;
-                const tl = gsap.timeline({
-                    delay: listIdx * 1.5, // sequential flow (1.5s gap between starts)
-                    onUpdate: () => {
-                        const currentY = gsap.getProperty(list, "y");
-                        const index = Math.floor(Math.abs(currentY) / cardHeight);
-                        if (index !== prevIndex) {
-                            prevIndex = index;
-                            // Play tick for each column since they are sequential now
-                            this.playTick();
-                        }
-                    },
-                });
-
-                tl.to(list, {
-                    y: mainTarget,
-                    duration: duration,
-                    ease: "power3.out",
-                    force3D: true, // Hardware acceleration
-                }).to(list, {
-                    y: finalTarget,
-                    duration: 1,
-                    ease: "power2.out",
-                    force3D: true,
-                });
+            tl.to(list, {
+                x: mainTarget,
+                duration: duration,
+                ease: "power3.out",
+                force3D: true, // Hardware acceleration
+            }).to(list, {
+                x: finalTarget,
+                duration: 1,
+                ease: "power2.out",
+                force3D: true,
             });
         },
         toggleCookie(key) {
@@ -571,42 +579,58 @@ export default {
     width: 100%;
 }
 
-/* Multi-Roulette Styles */
+/* Multi-Roulette Styles (Horizontal Drum Premium) */
 .case__slider.multi {
-    height: 500px; /* Increased to fit 160px items */
+    height: 380px; 
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 15px;
-    background: rgba(0, 0, 0, 0.15);
+    padding: 0;
+    background: rgba(13, 13, 18, 0.4);
     border-radius: 20px;
-    margin: 15px auto;
-    max-width: 1400px; /* Increased to fit multiple 208px columns */
+    margin: 20px auto;
+    width: 100%;
+    max-width: 1200px;
     position: relative;
     overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
 .case__slider-multi {
     display: flex;
-    gap: 12px;
+    justify-content: center;
     width: 100%;
     height: 100%;
-    justify-content: center;
 }
 
 .multi-roulette-column {
     position: relative;
-    flex: 0 0 208px; /* Fixed width as requested */
+    width: 100%;
     height: 100%;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 12px;
+    background: transparent;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    transition: all 0.3s ease;
 }
 
-.multi-roulette-column:hover {
-    background: rgba(255, 255, 255, 0.04);
+.multi-roulette-bg-image {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+    opacity: 0.15;
+    filter: blur(40px);
+    pointer-events: none;
+}
+
+.multi-roulette-bg-image img {
+    max-width: 80%;
+    max-height: 80%;
+    object-fit: contain;
 }
 
 .multi-roulette-overlay {
@@ -615,8 +639,8 @@ export default {
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 5;
-    background: rgba(20, 20, 27, 0.99);
+    z-index: 15;
+    background: rgba(13, 13, 18, 0.6);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -624,160 +648,197 @@ export default {
 }
 
 .multi-roulette-overlay img {
-    max-width: 80%; 
+    max-width: 280px; 
     max-height: 80%;
     object-fit: contain;
-    filter: drop-shadow(0 0 15px rgba(0, 0, 0, 0.5));
+    filter: drop-shadow(0 0 30px rgba(0, 0, 0, 0.8));
+    z-index: 20;
+}
+
+.multi-roulette-fader {
+    position: absolute;
+    top: 0;
+    width: 25%;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.multi-roulette-fader.left {
+    left: 0;
+    background: linear-gradient(to right, #0d0d12 0%, transparent 100%);
+}
+
+.multi-roulette-fader.right {
+    right: 0;
+    background: linear-gradient(to left, #0d0d12 0%, transparent 100%);
+}
+
+.multi-roulette-glow {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255, 184, 0, 0.15) 0%, transparent 70%);
+    z-index: 2;
+    pointer-events: none;
 }
 
 .multi-roulette-wrapp {
     height: 100%;
     width: 100%;
     position: relative;
+    display: flex;
+    align-items: center;
+    z-index: 5;
+    /* Apply mask for item fading */
+    mask-image: linear-gradient(to right, transparent, black 25%, black 75%, transparent);
 }
 
-.multi-roulette-inner {
+.multi-roulette-inner.horizontal {
+    display: flex;
+    flex-direction: row; 
+    align-items: center;
+    height: 100%;
+    will-change: transform;
+    backface-visibility: hidden;
+}
+
+.item.horizontal {
+    flex: 0 0 180px; 
+    height: 240px;   
+    margin: 0 10px;
     display: flex;
     flex-direction: column;
+    justify-content: flex-start;
     align-items: center;
-    width: 100%;
-    will-change: transform; /* Hardware acceleration */
+    position: relative;
+    transform: translateZ(0);
     backface-visibility: hidden;
+    padding: 15px;
+}
+
+.item.horizontal .item__inner {
+    width: 100%;
+    height: 180px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background 0.3s ease;
+}
+
+.item.horizontal:hover .item__inner {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.item.horizontal .item__image {
+    max-width: 80%;
+    max-height: 80%;
+    object-fit: contain;
+    filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.3));
+}
+
+.item__info {
+    margin-top: 12px;
+    text-align: center;
+    width: 100%;
+}
+
+.item__name {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.item__subname {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+.case__slider-cursor.vertical {
+    position: absolute;
+    width: 2px;
+    height: 100%;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+    background: rgba(255, 184, 0, 0.8);
+    box-shadow: 0 0 15px rgba(255, 184, 0, 0.5);
+    z-index: 20;
+}
+
+.cursor-light {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px;
+    height: 40px;
+    background: linear-gradient(to bottom, #ffb800, transparent);
+    filter: blur(4px);
 }
 
 .case__win-items {
     display: flex;
     flex-wrap: nowrap;
     justify-content: center;
-    gap: 20px;
+    gap: 15px;
     width: 100%;
     overflow-x: auto;
     padding: 30px 0;
 }
 
-.case__win-item {
-    flex: 0 0 260px;
-    min-width: 220px;
-    transition: transform 0.3s ease;
-}
-
-.case__win-item:hover {
-    transform: translateY(-5px);
-}
-
-.case__win-item .item {
-    width: 100%;
-}
-
-.item.vertical {
-    width: 100%;
-    min-height: 160px; /* Fixed height as requested */
-    height: 160px;
-    margin: 3px 0;
-    flex-shrink: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    transition: all 0.3s ease;
-    transform: translateZ(0); /* Hardware acceleration */
-    backface-visibility: hidden;
-}
-
-.item.vertical .item__inner {
-    width: 90%;
-    height: 90%;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.item.vertical .item__image {
-    max-width: 90%;
-    max-height: 90%;
-    object-fit: contain;
-}
-
-.case__slider-cursor.horizontal {
-    width: 100%;
-    height: 3px;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    background: var(--primary-color, #ff9900);
-    box-shadow: 0 0 12px var(--primary-color, #ff9900);
-    z-index: 10;
-}
-
-/* Mobile responsive for multi-roulette */
+/* Mobile responsive */
 @media (max-width: 768px) {
     .case__slider.multi {
-        height: 350px; /* Reduced for tablet */
+        height: 300px;
+        max-width: 95%;
+    }
+    
+    .item.horizontal {
+        flex: 0 0 140px;
+        height: 200px;
         padding: 10px;
     }
-    
-    .case__slider-multi {
-        display: flex;
-        flex-wrap: nowrap;
-        gap: 6px;
-        padding: 0 5px;
-        overflow-x: hidden; /* Prevent scroll, fit everything */
-    }
-    
-    .multi-roulette-column {
-        flex: 1 1 0; /* Equal width to fit all */
-        min-width: 0;
-        height: 100%;
+
+    .item.horizontal .item__inner {
+        height: 140px;
     }
 
-    .case__win-items {
-        gap: 8px;
-        padding: 10px 0;
-    }
-
-    .case__win-item {
-        min-width: 120px;
-        flex: 0 1 150px;
-    }
-
-    .item.vertical {
-        min-height: 100px; /* Smaller for tablet */
-        height: 100px;
-    }
-
-    .item.vertical .item__inner {
-        width: 92%;
-        height: 92%;
+    .multi-roulette-overlay img {
+        max-width: 180px;
     }
 }
 
 @media (max-width: 480px) {
     .case__slider.multi {
-        height: 250px; /* Compact for phones */
+        height: 240px;
+    }
+
+    .item.horizontal {
+        flex: 0 0 110px;
+        height: 160px;
+    }
+
+    .item.horizontal .item__inner {
+        height: 110px;
         border-radius: 12px;
     }
 
-    .item.vertical {
-        min-height: 60px; /* Even smaller for phones */
-        height: 60px;
-    }
-    
-    .case__win-items {
-        gap: 5px;
-        padding: 5px 0;
-    }
-
-    .case__win-item {
-        min-width: 90px;
-        flex: 0 1 110px;
-    }
+    .item__name { font-size: 11px; }
+    .item__subname { font-size: 9px; }
 
     .multi-roulette-overlay img {
-        max-width: 70%;
-    }
-
-    .case__slider-multi {
-        gap: 4px;
+        max-width: 140px;
     }
 }
 </style>
