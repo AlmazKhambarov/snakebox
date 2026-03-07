@@ -118,6 +118,7 @@ class UpgradeController extends Controller
         }
         $userItemId = $request->userItem;
         $siteItemId = $request->siteItem;
+        $balanceAmount = $request->balance_amount; // в копейках (формат 100 = 1 монета)
 
         $userItem = null;
         if (!is_null($userItemId)) {
@@ -129,10 +130,17 @@ class UpgradeController extends Controller
                 ->first();
         }
 
-        if (!$userItemId) {
+        if (!$userItem && !$balanceAmount) {
             return [
                 'success' => false,
-                'message' => 'Nothing to put!'
+                'message' => 'Выберите предмет или введите сумму для баланса!'
+            ];
+        }
+
+        if ($balanceAmount && $balanceAmount > $user->balance) {
+            return [
+                'success' => false,
+                'message' => 'Недостаточно средств на балансе!'
             ];
         }
 
@@ -145,9 +153,7 @@ class UpgradeController extends Controller
             ];
         }
 
-
-
-        $totalPrice = $userItem->price;
+        $totalPrice = $balanceAmount ?: $userItem->price;
 
         if ($totalPrice > $siteItem->steam_price) {
             return [
@@ -156,11 +162,14 @@ class UpgradeController extends Controller
             ];
         }
 
+        // Списание баланса если используется апгрейд с баланса
+        if ($balanceAmount) {
+            $user->decrement('balance', $balanceAmount);
+        }
+
         $provablyData = ProvablyFairSeed::where('user_id', $user->id)
             ->where('active', true)
             ->first();
-
-
 
         if (!$provablyData) {
             return ['success' => false, 'message' => 'No provably fair user keys found!'];
@@ -188,7 +197,7 @@ class UpgradeController extends Controller
         // Записываем апгрейд в таблицу upgrades
         $upgrade = Upgrade::create([
             'user_id' => $user->id,
-            'item_id' => $userItem->skin_id,
+            'item_id' => $userItem ? $userItem->skin_id : null,
             'win_id' => $success ? $siteItem->id : null,
             'price' => $totalPrice,
             'price_win' => $success ? $siteItem->steam_price : null,
@@ -223,9 +232,11 @@ class UpgradeController extends Controller
             $this->rtpService->updateUpgradeStats($totalPrice, 0);
         }
 
-        $userItem->update([
-            'status' => Lives::SELL,
-        ]);
+        if ($userItem) {
+            $userItem->update([
+                'status' => Lives::SELL,
+            ]);
+        }
 
         Log::channel('api_upgrade')->info('Upgrade created', [
             'upgrade_id' => $upgrade->id,

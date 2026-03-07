@@ -2,8 +2,12 @@
     <div class="upgrade__skins-wrapp">
         <div class="upgrade__skins-wrapp-item">
             <div class="upgrade__skins-wrapp-title">Ваш инвентарь</div>
-            <div class="cases__top-right">
-                <div class="form-input upgrade__search">
+            <div class="cases__top-right cases__top-right--upgrade">
+                <div class="upgrade__balance-toggle clickable" @click="$emit('select-balance-mode')" :class="{ active: isBalanceMode }">
+                    <div class="icon" style="mask-image: url('images/icons/coin.svg');"></div>
+                    <span>Баланс</span>
+                </div>
+                <div class="form-input upgrade__search" v-if="!isBalanceMode">
                     <div class="form-input__wrapp">
                         <div class="form-input__icon">
                             <div
@@ -56,6 +60,28 @@
             <div class="mines__inventory">
                 <div class="mines__inventory-wrapp">
                     <LoadingSpinner v-if="isUserLoading" text="Загрузка инвентаря..." />
+                    <div
+                        v-else-if="isBalanceMode"
+                        class="mines__inventory-scroll"
+                    >
+                        <div class="upgrade__balance-input-wrap">
+                            <div class="upgrade__balance-title">Введите сумму для апгрейда</div>
+                            <div class="form-input upgrade__balance-field">
+                                <div class="form-input__wrapp">
+                                    <div class="form-input__icon">
+                                        <div class="icon" style="mask-image: url('images/icons/coin.svg');"></div>
+                                    </div>
+                                    <input 
+                                        type="number" 
+                                        :value="balanceAmount" 
+                                        @input="$emit('update:balanceAmount', Number($event.target.value))"
+                                        placeholder="Сумма" 
+                                    />
+                                </div>
+                            </div>
+                            <div class="upgrade__balance-hint">Минимальная сумма: 0.01</div>
+                        </div>
+                    </div>
                     <div
                         v-else-if="userSkins.length >= 1"
                         class="mines__inventory-scroll"
@@ -187,7 +213,7 @@
         </div>
         <div class="upgrade__skins-wrapp-item">
             <div class="upgrade__skins-wrapp-title">Предметы для апгрейда</div>
-            <div class="cases__top-right">
+            <div class="cases__top-right cases__top-right--upgrade">
                 <div class="form-input upgrade__search">
                     <div class="form-input__wrapp">
                         <div class="form-input__icon">
@@ -405,6 +431,9 @@ export default {
         //other
         inventoryButtonFactor: String,
         debounceGetItems: Function,
+        // balance
+        isBalanceMode: Boolean,
+        balanceAmount: Number,
     },
     emits: [
         "update:filterInputSearch",
@@ -420,6 +449,8 @@ export default {
         "update:selectedUserItem",
         "change-page",
         "change-page-user",
+        "select-balance-mode",
+        "update:balanceAmount",
     ],
     computed: {
         localSort: {
@@ -637,5 +668,125 @@ export default {
 .item.locked:hover {
     transform: none !important;
     box-shadow: none !important;
+}
+
+/* Фикс фильтров на мобилке */
+@media (max-width: 768px) {
+    .upgrade__skins-wrapp-title {
+        display: block !important;
+        width: 100% !important;
+        margin-bottom: 15px !important;
+        font-size: 20px !important;
+    }
+
+    .cases__top-right--upgrade {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 12px !important;
+        margin-bottom: 15px;
+        align-items: center;
+    }
+    
+    .upgrade__search {
+        width: 100% !important;
+        flex: 1 1 100% !important;
+        order: 1 !important;
+    }
+
+    .upgrade__balance-toggle {
+        order: 2 !important;
+        width: auto !important;
+    }
+
+    .upgrade__cases-price {
+        order: 2 !important;
+        margin-left: auto !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    .cases__prices {
+        width: 100% !important;
+        display: flex !important;
+        gap: 8px !important;
+        order: 3 !important;
+        margin-top: 5px !important;
+    }
+
+    .cases__prices .form-input__wrapp {
+        flex: 1 !important;
+        display: block !important;
+        min-width: 0 !important;
+    }
+
+    .cases__prices input {
+        width: 100% !important;
+        padding: 8px 12px !important;
+        height: 40px !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 8px !important;
+        color: #fff !important;
+    }
+}
+
+/* Стили для выбора баланса */
+.upgrade__balance-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.upgrade__balance-toggle.active {
+    background: var(--primary-color, #ffb800);
+    border-color: var(--primary-color, #ffb800);
+    color: #000;
+}
+
+.upgrade__balance-toggle.active .icon {
+    background: #000;
+}
+
+.upgrade__balance-toggle .icon {
+    width: 18px;
+    height: 18px;
+    background: #fff;
+}
+
+.upgrade__balance-input-wrap {
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 250px;
+    text-align: center;
+}
+
+.upgrade__balance-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #fff;
+}
+
+.upgrade__balance-field {
+    max-width: 250px;
+    width: 100%;
+}
+
+.upgrade__balance-hint {
+    margin-top: 15px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
 }
 </style>

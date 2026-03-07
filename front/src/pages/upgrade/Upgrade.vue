@@ -43,8 +43,10 @@
                 @update:selectedUserItem="selectedUserItem = $event"
                 @change-page-user="userItems"
                 :isUserLoading="isUserLoading"
-                :inventoryButtonFactor="inventoryButtonFactor"
                 :debounceGetItems="debounceGetItems"
+                v-model:isBalanceMode="isBalanceMode"
+                v-model:balanceAmount="balanceAmount"
+                @select-balance-mode="toggleBalanceMode"
             />
         </div>
     </div>
@@ -114,6 +116,9 @@ export default {
             debounceTimer: null,
             state: "default",
             stateActions: "default",
+            // balance
+            isBalanceMode: false,
+            balanceAmount: 0,
         };
     },
     computed: {
@@ -121,11 +126,13 @@ export default {
             let gameChance = 0;
             let transformChance = 1;
 
-            if (this.selectedUserItem && this.selectedSiteItem) {
-                const userItemPrice = this.selectedUserItem.item.steam_price;
+            if ((this.selectedUserItem || this.isBalanceMode) && this.selectedSiteItem) {
+                const userPrice = this.isBalanceMode 
+                    ? this.balanceAmount * 100 
+                    : this.selectedUserItem.item.steam_price;
 
                 gameChance =
-                    (userItemPrice / this.selectedSiteItem.steam_price) * 100;
+                    (userPrice / this.selectedSiteItem.steam_price) * 100;
                 gameChance = Math.max(0.01, Math.min(gameChance, 75));
                 transformChance = gameChance / 100;
             }
@@ -224,13 +231,23 @@ export default {
         },
 
         async createUpgrade() {
-            if (!this.selectedUserItem || !this.selectedSiteItem) {
-                this.$toastr.error("Выберите оба предмета");
+            if (!this.selectedSiteItem) {
+                this.$toastr.error("Выберите предмет для апгрейда");
                 return;
             }
+            if (!this.selectedUserItem && !this.isBalanceMode) {
+                this.$toastr.error("Выберите свой предмет или используйте баланс");
+                return;
+            }
+            if (this.isBalanceMode && this.balanceAmount <= 0) {
+                this.$toastr.error("Введите корректную сумму");
+                return;
+            }
+
             await request("post", "/upgrade/create", {
-                userItem: this.selectedUserItem.id,
+                userItem: this.isBalanceMode ? null : this.selectedUserItem.id,
                 siteItem: this.selectedSiteItem.id,
+                balance_amount: this.isBalanceMode ? this.balanceAmount * 100 : null,
             }).then(({ data }) => {
                 if (data.status !== 200) {
                     this.$toastr.error(data.message);
@@ -270,6 +287,13 @@ export default {
             this.debounceTimer = setTimeout(() => {
                 this.siteItems();
             }, 600);
+        },
+        toggleBalanceMode() {
+            this.isBalanceMode = !this.isBalanceMode;
+            if (this.isBalanceMode) {
+                this.selectedUserItem = null;
+            }
+            this.$playSound("/sounds/click.mp3");
         },
     },
 };
