@@ -3,35 +3,32 @@
         <LoadingSpinner v-if="isLoading" text="Загрузка кейса..." />
         <template v-else>
         <div class="case__top-inner">
-            <div v-show="state !== 'opened'" class="case__slider multi">
+            <div v-show="state !== 'opened'" class="case__slider multi" :class="{ 'multi-drums-active': state === 'opening' && rouletteItems.length > 1 }">
                 <div class="case__slider-multi">
-                    <div class="multi-roulette-column single-drum">
-                        <!-- Background Decoration -->
-                        <div class="multi-roulette-bg-image">
-                            <img :src="box.image" alt="box-bg" />
-                        </div>
-                        
-                        <!-- Fixed Center Case (Overlay when not opening) -->
-                        <div v-show="state === 'default'" class="multi-roulette-overlay">
-                            <img :src="box.image" alt="box" />
-                        </div>
+                    <!-- Background Decoration -->
+                    <div class="multi-roulette-bg-image">
+                        <img :src="box.image" alt="box-bg" />
+                    </div>
+                    
+                    <!-- Fixed Center Case (Overlay when not opening) -->
+                    <div v-if="state === 'default'" class="multi-roulette-overlay">
+                        <img :src="box.image" alt="box" />
+                    </div>
 
-                        <!-- Side Faders -->
-                        <div class="multi-roulette-fader left"></div>
-                        <div class="multi-roulette-fader right"></div>
+                    <!-- Shared Global Elements (Faders, Glow, Cursor) -->
+                    <div class="multi-roulette-fader left"></div>
+                    <div class="multi-roulette-fader right"></div>
+                    <div class="multi-roulette-glow" v-show="state === 'opening'"></div>
+                    <div v-show="state === 'opening'" class="case__slider-cursor vertical">
+                        <div class="cursor-light"></div>
+                    </div>
 
-                        <!-- Current Item Glow -->
-                        <div class="multi-roulette-glow" v-show="state === 'opening'"></div>
-                        
-                        <div v-show="state === 'opening'" class="case__slider-cursor vertical">
-                            <div class="cursor-light"></div>
-                        </div>
-
+                    <div v-for="(list, listIdx) in rouletteItems" :key="listIdx" class="multi-roulette-column single-drum">
                         <div class="multi-roulette-wrapp">
-                            <div class="multi-roulette-inner horizontal" ref="rouletteList" v-if="rouletteItems[0]">
+                            <div class="multi-roulette-inner horizontal" :ref="el => { if (el) drums[listIdx] = el }">
                                 <div
                                     class="item horizontal"
-                                    v-for="(rouletteItem, idx) in rouletteItems[0]"
+                                    v-for="(rouletteItem, idx) in list"
                                     :key="idx"
                                     :class="getItemRarityClass(rouletteItem.rarity)"
                                 >
@@ -52,72 +49,73 @@
             </div>
             <div
                 v-if="state === 'opened'"
-                class="case__win-items"
-                x-ref="winners"
+                class="case__win-modal"
             >
-                <div class="case__win-item" v-for="(winItem, index) in winItems" :key="index">
-                    <div class="item" :class="getItemRarityClass(winItem.rarity)">
-                        <div class="item__inner">
-                            <div class="item__top">
-                                <div class="item__quality-top">
-                                    {{ winItem.quality }}
-                                </div>
-                                <div class="sum sum--xs sum--bgWhite">
-                                    <div
-                                        class="icon"
-                                        style="
-                                            mask-image: url('/assets/icons/coin.svg');
-                                        "
-                                    ></div>
-                                    {{ winItem.steam_price / 100 }}
-                                </div>
-                            </div>
-                            <div class="item__center">
-                                <img
-                                    :src="winItem.image"
-                                    class="item__image"
-                                    alt="skin"
-                                />
-                                <div
-                                    class="icon item__center-snake"
-                                    style="
-                                        mask-image: url('/assets/icons/snake.svg');
-                                    "
-                                ></div>
-                            </div>
-                            <div class="item__bottom">
-                                <div class="item__model">
-                                    {{ winItem.weapon }}
-                                </div>
-                                <div class="item__name">
-                                    {{ winItem.skin_name }}
-                                </div>
-                            </div>
-                        </div>
-                        <img
-                            :src="`/images/case/shadow-${getItemRarityClass(
-                                winItem.rarity
-                            )}.webp`"
-                            class="item__rarity-img"
-                            alt="rarity"
-                        />
-                    </div>
-                    <button
-                        @click="sellItem(winItem.id)"
-                        type="button"
-                        class="case__win-item-button"
-                    >
-                        <span>Продать за</span>
-                        <div class="sum sum--xs sum--bgWhite">
+                <div class="case__win-modal-overlay" @click="refresh"></div>
+                <div class="case__win-modal-content">
+                    <div class="case__win-total">
+                        <span>Общий выигрыш:</span>
+                        <div class="sum sum--sm">
                             <div
                                 class="icon coin"
-                                style="
-                                    mask-image: url('/assets/icons/coin.svg');
-                                "
+                                style="mask-image: url('/assets/icons/coin.svg');"
                             ></div>
-                            {{ winItem.steam_price / 100 }}
+                            <span>{{ totalWinSum }}</span>
                         </div>
-                    </button>
+                    </div>
+                    <div class="case__win-items-row">
+                        <div class="case__win-item-compact" v-for="(winItem, index) in winItems" :key="index">
+                            <div class="item-compact" :class="getItemRarityClass(winItem.rarity)">
+                                <div class="item-compact__price">
+                                    <div class="sum sum--xs sum--bgWhite">
+                                        <div
+                                            class="icon"
+                                            style="mask-image: url('/assets/icons/coin.svg');"
+                                        ></div>
+                                        {{ winItem.steam_price / 100 }}
+                                    </div>
+                                </div>
+                                <div class="item-compact__image">
+                                    <img :src="winItem.image" alt="skin" />
+                                </div>
+                                <div class="item-compact__name">
+                                    <span class="item-compact__weapon">{{ winItem.weapon }}</span>
+                                    <span class="item-compact__skin">{{ winItem.skin_name }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="case__win-modal-footer">
+                        <button
+                            @click="refresh"
+                            type="button"
+                            class="btn btn--start case__win-footer-btn"
+                        >
+                            <div class="btn__inner">
+                                <div class="btn__inner-left">
+                                    <span>Открыть ещё</span>
+                                </div>
+                            </div>
+                        </button>
+                        <button
+                            @click="sellAll"
+                            type="button"
+                            class="btn btn--sell case__win-footer-btn"
+                        >
+                            <div class="btn__inner">
+                                <div class="btn__inner-left">
+                                    <span>Продать за</span>
+                                    <div class="sum sum--xs">
+                                        <div
+                                            class="icon coin"
+                                            style="mask-image: url('/assets/icons/coin.svg');"
+                                        ></div>
+                                        {{ totalWinSum }}
+                                    </div>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -266,19 +264,6 @@
                         </div>
                     </div>
                 </div>
-                <button
-                    v-show="state === 'opened'"
-                    @click="refresh"
-                    type="button"
-                    class="btn btn--start page__controls-main-btn"
-                >
-                    <div class="btn__inner">
-                        <div class="btn__inner-left">
-                            <span>Продолжить</span>
-                            <p>Открыть повторно</p>
-                        </div>
-                    </div>
-                </button>
             </div>
             <div class="page__controls-right">
                 <div class="page__controls-right-inner">
@@ -334,15 +319,18 @@ export default {
             rouletteItems: [], // Будет массивом массивов: [[item, item...], [item, item...]]
             winItems: [],
 
-            screenWidth: window.innerWidth,
-            showWinNow: false,
             demoOpen: false,
             fastOpen: false,
             selectedCount: 1,
+            drums: [], // Навигация по барабанам по индексу (рефы)
+            isMobile: window.innerWidth <= 768,
         };
     },
     computed: {
         ...mapState(useAuthStore, ["isAuth", "user"]),
+        totalWinSum() {
+            return (this.winItems.reduce((sum, item) => sum + (item.steam_price || 0), 0) / 100).toFixed(2);
+        },
     },
     watch: {
         caseContent: {
@@ -414,13 +402,20 @@ export default {
                 this.setWinItems(data.winItems);
 
                 this.$nextTick(() => {
-                    const duration = this.fastOpen ? 2 : 8;
-                    this.animateRoulette(18, duration);
-                    
+                    // Даём DOM время отрисовать барабаны с правильными размерами
                     setTimeout(() => {
-                        this.state = "opened";
-                        this.$playSound("/sounds/contract-run.mp3");
-                    }, duration * 1000 + 500);
+                        const baseDuration = this.fastOpen ? 2.5 : (this.isMobile ? 6 : 10);
+                        const drumDelay = this.fastOpen ? 0.5 : (this.isMobile ? 1 : 1.5);
+                        const drumCount = this.rouletteItems.length;
+                        const winIdx = this.isMobile ? 25 : 40;
+                        this.animateRoulette(winIdx, baseDuration, drumDelay);
+                        
+                        const totalDuration = baseDuration + drumDelay * (drumCount - 1) + 1.5;
+                        setTimeout(() => {
+                            this.state = "opened";
+                            this.$playSound("/sounds/contract-run.mp3");
+                        }, totalDuration * 1000);
+                    }, 100);
                 });
 
                 this.box.is_free = false;
@@ -429,79 +424,83 @@ export default {
         randomInteger(min, max) {
             return Math.floor(Math.random() * (max - min + 1)) + min;
         },
-        initRoulette() {
+        initRoulette(count = 1) {
             if (!this.caseContent?.length) return;
             
-            const generateList = () => Array.from({ length: 22 }, () => {
+            const itemCount = this.isMobile ? 30 : 50;
+            const generateList = () => Array.from({ length: itemCount }, () => {
                 const randomIndex = this.randomInteger(0, this.caseContent.length - 1);
                 return this.caseContent[randomIndex];
             });
 
-            this.rouletteItems = [generateList()];
+            this.rouletteItems = Array.from({ length: Math.max(1, count) }, () => generateList());
         },
         setWinItems(winItems) {
             // winItems - это массив выпавших предметов
-            // Для одиночного барабана показываем первый предмет из списка
-            if (this.rouletteItems[0]) {
-                this.rouletteItems[0] = this.rouletteItems[0].map((item, i) => i === 18 ? winItems[0] : item);
-            }
+            winItems.forEach((winItem, listIdx) => {
+                if (this.rouletteItems[listIdx]) {
+                    const winIdx = this.isMobile ? 25 : 40;
+                    this.rouletteItems[listIdx] = this.rouletteItems[listIdx].map((item, i) => i === winIdx ? winItem : item);
+                }
+            });
         },
 
         resetTransform() {
-            const lists = Array.isArray(this.$refs.rouletteList) 
-                ? this.$refs.rouletteList 
-                : [this.$refs.rouletteList];
-                
-            lists.forEach(list => {
+            this.drums.forEach(list => {
                 if (!list) return;
                 gsap.killTweensOf(list);
                 gsap.set(list, { x: 0, y: 0 });
             });
             this.showWinNow = false;
         },
-        animateRoulette(winItemIndex, duration = 8.5) {
+        animateRoulette(winItemIndex, duration = 8.5, drumDelay = 1.5) {
             this.resetTransform();
 
-            const list = this.$refs.rouletteList;
-            if (!list) return;
+            this.drums.forEach((list, listIdx) => {
+                if (!list || listIdx >= this.rouletteItems.length) return;
 
-            const items = list.children;
-            if (!items || !items.length) return;
+                const items = list.children;
+                if (!items || !items.length) return;
 
-            const winItem = items[winItemIndex];
-            if (!winItem) return;
+                const winItem = items[winItemIndex];
+                if (!winItem) return;
 
-            // Horizontal Logic 
-            const cardWidth = winItem.offsetWidth;
-            const containerWidth = list.parentElement.offsetWidth;
-            const winItemOffset = winItem.offsetLeft;
+                // Horizontal Logic 
+                const cardWidth = winItem.offsetWidth || 120;
+                const containerWidth = list.parentElement.offsetWidth;
+                const winItemOffset = winItem.offsetLeft;
 
-            const finalTarget = -(winItemOffset - (containerWidth / 2 - cardWidth / 2));
-            const randomOffset = Math.floor(Math.random() * 40) - 20;
-            const mainTarget = finalTarget + randomOffset;
+                const finalTarget = -(winItemOffset - (containerWidth / 2 - cardWidth / 2));
+                const randomOffset = Math.floor(Math.random() * 40) - 20;
+                const mainTarget = finalTarget + randomOffset;
 
-            let prevIndex = -1;
-            const tl = gsap.timeline({
-                onUpdate: () => {
-                    const currentX = gsap.getProperty(list, "x");
-                    const index = Math.floor(Math.abs(currentX) / cardWidth);
-                    if (index !== prevIndex) {
-                        prevIndex = index;
-                        this.playTick();
-                    }
-                },
-            });
+                // Каждый следующий барабан останавливается позже
+                const thisDuration = duration + (drumDelay * listIdx);
 
-            tl.to(list, {
-                x: mainTarget,
-                duration: duration,
-                ease: "power3.out",
-                force3D: true, // Hardware acceleration
-            }).to(list, {
-                x: finalTarget,
-                duration: 1,
-                ease: "power2.out",
-                force3D: true,
+                let prevIndex = -1;
+                const playSound = !this.isMobile; // Отключаем тик на мобилке для производительности
+                const tl = gsap.timeline({
+                    onUpdate: playSound ? () => {
+                        const currentX = gsap.getProperty(list, "x");
+                        const index = Math.floor(Math.abs(currentX) / cardWidth);
+                        if (index !== prevIndex) {
+                            prevIndex = index;
+                            if (listIdx === 0) this.playTick();
+                        }
+                    } : undefined,
+                });
+
+                tl.to(list, {
+                    x: mainTarget,
+                    duration: thisDuration,
+                    ease: "power3.out",
+                    force3D: false,
+                }).to(list, {
+                    x: finalTarget,
+                    duration: 1,
+                    ease: "power2.out",
+                    force3D: false,
+                });
             });
         },
         toggleCookie(key) {
@@ -512,7 +511,7 @@ export default {
             this.state = "default";
             this.rouletteItems = [];
             this.winItems = [];
-            this.showWinNow = false;
+            this.drums = [];
             this.initRoulette(this.selectedCount);
         },
         async sellItem(liveId) {
@@ -533,8 +532,29 @@ export default {
                 }
             });
         },
+        async sellAll() {
+            const itemsToSell = this.winItems.filter(item => item.id);
+            if (itemsToSell.length === 0) {
+                this.$toastr.error('Нет предметов для продажи (демо режим)');
+                return;
+            }
+            for (const item of itemsToSell) {
+                await request("POST", "/case/sell/item", {
+                    liveId: item.id,
+                }).then(({ data }) => {
+                    if (data.success) {
+                        this.winItems = this.winItems.filter(w => w.id !== item.id);
+                    }
+                });
+            }
+            if (this.winItems.length === 0 || !this.winItems.some(w => w.id)) {
+                this.$toastr.success('Все предметы проданы!');
+                this.refresh();
+            }
+        },
         updateWidth() {
             this.screenWidth = window.innerWidth;
+            this.isMobile = window.innerWidth <= 768;
         },
 
         getItemRarityClass,
@@ -581,7 +601,7 @@ export default {
 
 /* Multi-Roulette Styles (Horizontal Drum Premium) */
 .case__slider.multi {
-    height: 380px; 
+    height: 260px; 
     display: flex;
     justify-content: center;
     align-items: center;
@@ -596,19 +616,63 @@ export default {
     border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
-.case__slider-multi {
+.case__slider.multi.multi-drums-active {
+    height: auto !important;
+    max-height: 85vh;
+    padding: 5px 0;
+    overflow-y: auto;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    gap: 0;
+}
+
+.case__slider-multi {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
     width: 100%;
     height: 100%;
+}
+
+.case__slider.multi.multi-drums-active .case__slider-multi {
+    height: auto;
 }
 
 .multi-roulette-column {
     position: relative;
     width: 100%;
-    height: 100%;
+    height: 160px;
+    flex: 0 0 160px;
     background: transparent;
     overflow: hidden;
+}
+
+.case__slider.multi.multi-drums-active .multi-roulette-column {
+    flex: 0 0 100px; 
+    height: 100px;
+}
+
+.case__slider.multi.multi-drums-active .item.horizontal {
+    height: 100px;
+    flex: 0 0 90px;
+    padding: 2px;
+}
+
+.case__slider.multi.multi-drums-active .item.horizontal .item__inner {
+    height: 65px;
+}
+
+.case__slider.multi.multi-drums-active .item__info {
+    margin-top: 2px;
+}
+
+.case__slider.multi.multi-drums-active .item__name {
+    font-size: 9px;
+}
+
+.case__slider.multi.multi-drums-active .item__subname {
+    font-size: 7px;
 }
 
 .multi-roulette-bg-image {
@@ -702,14 +766,13 @@ export default {
     flex-direction: row; 
     align-items: center;
     height: 100%;
-    will-change: transform;
     backface-visibility: hidden;
 }
 
 .item.horizontal {
-    flex: 0 0 180px; 
-    height: 240px;   
-    margin: 0 10px;
+    flex: 0 0 120px; 
+    height: 160px;   
+    margin: 0 4px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -717,14 +780,14 @@ export default {
     position: relative;
     transform: translateZ(0);
     backface-visibility: hidden;
-    padding: 15px;
+    padding: 8px;
 }
 
 .item.horizontal .item__inner {
     width: 100%;
-    height: 180px;
+    height: 110px;
     background: rgba(255, 255, 255, 0.04);
-    border-radius: 16px;
+    border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
     justify-content: center;
@@ -771,9 +834,33 @@ export default {
     left: 50%;
     top: 0;
     transform: translateX(-50%);
-    background: rgba(255, 184, 0, 0.8);
-    box-shadow: 0 0 15px rgba(255, 184, 0, 0.5);
+    background: rgba(255, 184, 0, 0.4);
+    box-shadow: 0 0 15px rgba(255, 184, 0, 0.2);
     z-index: 20;
+    pointer-events: none;
+}
+
+.case__slider-cursor.vertical::before,
+.case__slider-cursor.vertical::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    z-index: 25;
+}
+
+.case__slider-cursor.vertical::before {
+    top: -2px;
+    border-top: 12px solid #ffb800;
+}
+
+.case__slider-cursor.vertical::after {
+    bottom: -2px;
+    border-bottom: 12px solid #ffb800;
 }
 
 .cursor-light {
@@ -781,64 +868,273 @@ export default {
     top: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 12px;
-    height: 40px;
-    background: linear-gradient(to bottom, #ffb800, transparent);
-    filter: blur(4px);
+    width: 20px;
+    height: 100%;
+    background: radial-gradient(ellipse at center, rgba(255, 184, 0, 0.15) 0%, transparent 70%);
+    filter: blur(8px);
 }
 
-.case__win-items {
-    display: flex;
-    flex-wrap: nowrap;
-    justify-content: center;
-    gap: 15px;
+.case__win-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
-    overflow-x: auto;
-    padding: 30px 0;
+    height: 100%;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.case__win-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+}
+
+.case__win-modal-content {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 700px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(13, 13, 18, 0.95);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 16px;
+}
+
+.case__win-total {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.case__win-items-row {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    flex-wrap: nowrap;
+}
+
+.case__win-item-compact {
+    flex: 1;
+    min-width: 0;
+    max-width: 130px;
+}
+
+.item-compact {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 6px;
+    gap: 4px;
+}
+
+.item-compact__price {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.item-compact__price .sum {
+    font-size: 11px;
+}
+
+.item-compact__image {
+    width: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.item-compact__image img {
+    max-width: 85%;
+    max-height: 85%;
+    object-fit: contain;
+    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.3));
+}
+
+.item-compact__name {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    overflow: hidden;
+}
+
+.item-compact__weapon {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.item-compact__skin {
+    font-size: 11px;
+    color: #fff;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.case__win-modal-footer {
+    margin-top: 14px;
+    width: 100%;
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.case__win-footer-btn {
+    flex: 1;
+    max-width: 250px;
+}
+
+.btn--sell {
+    background: linear-gradient(135deg, #ff9900, #ff6600) !important;
+}
+
+.btn--sell .btn__inner-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 /* Mobile responsive */
 @media (max-width: 768px) {
     .case__slider.multi {
-        height: 300px;
+        height: 200px;
         max-width: 95%;
     }
+
+    .multi-roulette-column {
+        height: 130px;
+        flex: 0 0 130px;
+    }
     
-    .item.horizontal {
-        flex: 0 0 140px;
-        height: 200px;
+    .case__slider.multi.multi-drums-active .multi-roulette-column {
+        flex: 0 0 80px; 
+        height: 80px;
+    }
+
+    .case__win-modal {
         padding: 10px;
     }
 
+    .case__win-modal-content {
+        padding: 10px;
+    }
+
+    .case__win-items-row {
+        gap: 4px;
+    }
+
+    .item-compact {
+        padding: 4px;
+    }
+
+    .item-compact__weapon { font-size: 8px; }
+    .item-compact__skin { font-size: 9px; }
+    .item-compact__price .sum { font-size: 9px; }
+
+    .case__win-total {
+        font-size: 14px;
+    }
+
+    .case__win-modal-footer {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .case__win-footer-btn {
+        max-width: 100%;
+        padding: 8px;
+        font-size: 16px;
+    }
+
+    .case__win-footer-btn .btn__inner {
+        padding: 6px 16px;
+    }
+    
+    .item.horizontal {
+        flex: 0 0 100px;
+        height: 130px;
+        padding: 6px;
+    }
+
     .item.horizontal .item__inner {
-        height: 140px;
+        height: 90px;
+        border-radius: 10px;
     }
 
     .multi-roulette-overlay img {
-        max-width: 180px;
+        max-width: 160px;
     }
 }
 
 @media (max-width: 480px) {
     .case__slider.multi {
-        height: 240px;
-    }
-
-    .item.horizontal {
-        flex: 0 0 110px;
         height: 160px;
     }
 
-    .item.horizontal .item__inner {
+    .multi-roulette-column {
         height: 110px;
-        border-radius: 12px;
+        flex: 0 0 110px;
     }
 
-    .item__name { font-size: 11px; }
-    .item__subname { font-size: 9px; }
+    .case__slider.multi.multi-drums-active .multi-roulette-column {
+        flex: 0 0 70px; 
+        height: 70px;
+    }
+
+    .case__slider.multi.multi-drums-active .item.horizontal {
+        height: 70px;
+        flex: 0 0 60px;
+    }
+
+    .case__slider.multi.multi-drums-active .item.horizontal .item__inner {
+        height: 45px;
+        border-radius: 8px;
+    }
+
+    .item.horizontal {
+        flex: 0 0 80px;
+        height: 110px;
+        padding: 4px;
+    }
+
+    .item.horizontal .item__inner {
+        height: 70px;
+        border-radius: 8px;
+    }
+
+    .item__name { font-size: 10px; }
+    .item__subname { font-size: 8px; }
 
     .multi-roulette-overlay img {
-        max-width: 140px;
+        max-width: 120px;
     }
 }
 </style>

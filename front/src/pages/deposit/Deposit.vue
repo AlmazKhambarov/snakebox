@@ -140,6 +140,9 @@
                                         v-model="amount"
                                         class="paymentAmountRUB"
                                     />
+                                    <div class="form-input__conversion" v-if="['nirvana_uzs', 'payme'].includes(selectedMethod?.system)">
+                                        ≈ {{ (amount / 156.25).toFixed(2) }} RUB
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -154,7 +157,7 @@
                                     "
                                 ></div>
                                 <span class="totalAmountPromo">{{
-                                    amountWithPercent.toFixed(2)
+                                    (['nirvana_uzs', 'payme'].includes(selectedMethod?.system) ? amountWithPercent / 156.25 : amountWithPercent).toFixed(2)
                                 }}</span>
                             </div>
                             <span>Вы получите</span>
@@ -185,7 +188,7 @@
                                         mask-image: url('images/icons/coin.svg');
                                     "
                                 ></div>
-                                <span class="totalAmount">{{ amount }}</span>
+                                <span class="totalAmount">{{ (['nirvana_uzs', 'payme'].includes(selectedMethod?.system) ? amountWithPercent / 156.25 : amountWithPercent).toFixed(2) }}</span>
                             </div>
                         </div>
                     </button>
@@ -365,4 +368,5 @@ export default {
 .deposit__card-modal-copy-btn:hover { background: rgba(74,222,128,0.25); }
 .deposit__card-modal-amount { font-size: 22px !important; font-weight: 700; color: #4ade80 !important; }
 .deposit__card-modal-warning { margin-top: 16px; padding: 12px; background: rgba(255,170,0,0.1); border: 1px solid rgba(255,170,0,0.2); border-radius: 10px; font-size: 13px; color: #fbbf24; line-height: 1.5; }
+.form-input__conversion { font-size: 13px; color: #888; margin-top: 8px; font-weight: 500; }
 </style>

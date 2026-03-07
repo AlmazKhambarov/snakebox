@@ -222,7 +222,7 @@
             <div class="footer__links gpu-boost">
                 <div class="footer__links-left">
                     <span>© {{ settings.site_name }} – 2025</span>
-                    <a href="javascript:;">Обратиться за помощью</a>
+                    <a href="https://t.me/SnakeDrop_uz" target="_blank">Обратиться за помощью</a>
                 </div>
                 <div class="footer__links-right">
                     <div class="footer__links-right">
