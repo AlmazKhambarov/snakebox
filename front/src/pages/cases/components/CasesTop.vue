@@ -125,30 +125,6 @@
             :class="{ disabled: state !== 'default' || !isAuth }"
         >
             <div class="page__controls-left">
-                <div class="page__controls-right-inner">
-                    <div class="page__controls-right-text">
-                        <div
-                            class="icon"
-                            style="mask-image: url('/images/icons/repeat.svg')"
-                        ></div>
-                        <span>ВКЛ / ВЫКЛ</span>
-                    </div>
-                    <div
-                        class="checkbox demoOpen"
-                        :class="{ active: demoOpen }"
-                        @click="toggleDemo"
-                    >
-                        <div class="checkbox__button">
-                            <div class="checkbox__button-el">
-                                <div class="checkbox__button-el-inner"></div>
-                            </div>
-                            <div class="checkbox__button-desc">
-                                <span>Демо</span>
-                                <p>Открытие кейса</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
             <div class="page__controls-center">
                 <a
@@ -185,7 +161,7 @@
                     v-show="
                         state === 'default' &&
                         isAuth &&
-                        (box.is_free || user.balance >= box.price * selectedCount || demoOpen)
+                        (box.is_free || user.balance >= box.price * selectedCount)
                     "
                     @click="openBox(box.is_free ? 1 : selectedCount)"
                     type="button"
@@ -213,7 +189,6 @@
                         user.balance < box.price &&
                         state === 'default' &&
                         isAuth &&
-                        !demoOpen &&
                         !box.is_free
                     "
                     class="page__controls-main-btn case__controls-not-have"
@@ -319,7 +294,6 @@ export default {
             rouletteItems: [], // Будет массивом массивов: [[item, item...], [item, item...]]
             winItems: [],
 
-            demoOpen: false,
             fastOpen: false,
             selectedCount: 1,
             drums: [], // Навигация по барабанам по индексу (рефы)
@@ -347,11 +321,8 @@ export default {
     },
     mounted() {
         window.addEventListener("resize", this.updateWidth);
+        window.addEventListener("resize", this.updateWidth);
         this.tickSound = new Audio("/sounds/tick.mp3");
-        const savedDemo = Cookies.get("demoOpen");
-        if (savedDemo !== undefined) {
-            this.demoOpen = savedDemo === "true";
-        }
         const savedFast = Cookies.get("fastOpen");
         if (savedFast !== undefined) {
             this.fastOpen = savedFast === "true";
@@ -372,11 +343,6 @@ export default {
                     console.error("Не удалось воспроизвести звук:", err);
                 });
         },
-        toggleDemo() {
-            this.demoOpen = !this.demoOpen;
-            Cookies.set("demoOpen", this.demoOpen.toString());
-            this.$playSound("/sounds/click.mp3");
-        },
         toggleFast() {
             this.fastOpen = !this.fastOpen;
             Cookies.set("fastOpen", this.fastOpen.toString());
@@ -387,7 +353,6 @@ export default {
             await request("POST", "/case/open", {
                 id: this.box.id,
                 count: count,
-                demoOpen: this.demoOpen,
             }).then(({ data }) => {
                 if (!data.success) {
                     this.$toastr.error(data.message);
@@ -619,7 +584,7 @@ export default {
 .case__slider.multi.multi-drums-active {
     height: auto !important;
     max-height: 85vh;
-    padding: 5px 0;
+    padding: 0;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -651,6 +616,8 @@ export default {
 .case__slider.multi.multi-drums-active .multi-roulette-column {
     flex: 0 0 100px; 
     height: 100px;
+    margin: 0;
+    padding: 0;
 }
 
 .case__slider.multi.multi-drums-active .item.horizontal {
@@ -770,9 +737,9 @@ export default {
 }
 
 .item.horizontal {
-    flex: 0 0 120px; 
+    flex: 0 0 130px; 
     height: 160px;   
-    margin: 0 4px;
+    margin: 0 2px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -780,7 +747,7 @@ export default {
     position: relative;
     transform: translateZ(0);
     backface-visibility: hidden;
-    padding: 8px;
+    padding: 0;
 }
 
 .item.horizontal .item__inner {
@@ -793,6 +760,8 @@ export default {
     justify-content: center;
     align-items: center;
     transition: background 0.3s ease;
+    padding: 0;
+    overflow: hidden;
 }
 
 .item.horizontal:hover .item__inner {
@@ -800,8 +769,10 @@ export default {
 }
 
 .item.horizontal .item__image {
-    max-width: 80%;
-    max-height: 80%;
+    max-width: 100%;
+    max-height: 100%;
+    width: 100%;
+    height: 100%;
     object-fit: contain;
     filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.3));
 }
@@ -1096,45 +1067,50 @@ export default {
 
 @media (max-width: 480px) {
     .case__slider.multi {
-        height: 160px;
+        height: 220px;
     }
 
     .multi-roulette-column {
-        height: 110px;
-        flex: 0 0 110px;
+        height: 170px;
+        flex: 0 0 170px;
     }
 
     .case__slider.multi.multi-drums-active .multi-roulette-column {
-        flex: 0 0 70px; 
-        height: 70px;
+        flex: 0 0 80px; 
+        height: 80px;
+        margin: 0;
+        padding: 0;
     }
 
     .case__slider.multi.multi-drums-active .item.horizontal {
-        height: 70px;
-        flex: 0 0 60px;
+        height: 80px;
+        flex: 0 0 70px;
+        margin: 0 1px;
+        padding: 1px;
     }
 
     .case__slider.multi.multi-drums-active .item.horizontal .item__inner {
-        height: 45px;
+        height: 55px;
         border-radius: 8px;
     }
 
     .item.horizontal {
-        flex: 0 0 80px;
-        height: 110px;
-        padding: 4px;
+        flex: 0 0 130px;
+        height: 170px;
+        padding: 2px;
+        margin: 0 2px;
     }
 
     .item.horizontal .item__inner {
-        height: 70px;
-        border-radius: 8px;
+        height: 120px;
+        border-radius: 10px;
     }
 
-    .item__name { font-size: 10px; }
-    .item__subname { font-size: 8px; }
+    .item__name { font-size: 11px; }
+    .item__subname { font-size: 9px; }
 
     .multi-roulette-overlay img {
-        max-width: 120px;
+        max-width: 140px;
     }
 }
 </style>

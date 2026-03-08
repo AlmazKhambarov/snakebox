@@ -184,7 +184,6 @@ class CasesController extends Controller
     {
         $id = intval($request->id);
         $count = intval($request->count);
-        $demoOpen = $request->demoOpen;
 
         $user = $request->user();
         if (!$user) {
@@ -208,7 +207,7 @@ class CasesController extends Controller
 
         $hasFreeCase = (bool)$freeCase;
 
-        if (!$hasFreeCase && $user->balance < $totalPrice && !$demoOpen) {
+        if (!$hasFreeCase && $user->balance < $totalPrice) {
             return [
                 'success' => false,
                 'message' => 'Недостаточно средств на балансе'
@@ -236,101 +235,77 @@ class CasesController extends Controller
         $liveIds = [];
 
         for ($i = 0; $i < $count; $i++) {
-            if ($demoOpen) {
-                // Полный рандом для демо-режима
-                $caseItem = $this->getWeightedRandomItem($caseItems);
-            } else {
-                // Логика с RTP и Provably Fair
-                $provablyData = ProvablyFairSeed::where('user_id', $user->id)
-                    ->where('active', true)
-                    ->first();
+            // Логика с RTP и Provably Fair
+            $provablyData = ProvablyFairSeed::where('user_id', $user->id)
+                ->where('active', true)
+                ->first();
 
-                if (!$provablyData) {
-                    return ['success' => false, 'message' => 'Не найдены provably fair ключи пользователя'];
-                }
-
-                $provablyData->nonce += 1;
-                $provablyData->save();
-
-                // Подготовка предметов с учетом RTP
-                $adjustedItems = $this->rtpService->getAdjustedDropChances($box, 
-                    $caseItems->map(function($item) {
-                        return [
-                            'item_id' => $item->item->id,
-                            'item' => $item->item,
-                            'chance' => $item->chance,
-                            'price' => $item->item->steam_price
-                        ];
-                    })->toArray()
-                );
-
-                // Используем Provably Fair с модифицированными шансами
-                $randFloat = $this->provablyFairRandom($provablyData->server_seed, $provablyData->client_seed, $provablyData->nonce);
-                $caseItem = $this->selectItemWithRTP($adjustedItems, $randFloat);
+            if (!$provablyData) {
+                return ['success' => false, 'message' => 'Не найдены provably fair ключи пользователя'];
             }
 
-            if (!$demoOpen) {
-                // Получаем объект предмета
-                $itemData = is_array($caseItem) ? $caseItem['item'] : $caseItem->item;
-                
-                $live = Lives::create([
-                    'user_id' => $user->id,
-                    'skin_id' => $itemData->id,
-                    'box_id' => $box->id,
-                    'from_where' => "BOX",
-                    'price' => $itemData->steam_price,
-                    'status' => "STOCK",
-                ]);
-                $liveIds[] = $live->id;
-                $resultItems[] = [
-                    'id' => $live->id,
-                    'weapon' => $itemData->weapon,
-                    'skin_name' => $itemData->skin_name,
-                    'image' => $itemData->image,
-                    'steam_price' => $itemData->steam_price,
-                    'quality' => $itemData->quality,
-                    'rarity' => $itemData->rarity,
-                ];
-                
-                // Обновляем статистику RTP кейса
-                $this->rtpService->updateBoxStats($box, $box->price, $itemData->steam_price);
-            } else {
-                // Для демо режима
-                $itemData = $caseItem->item;
-                $resultItems[] = [
-                    'weapon' => $itemData->weapon,
-                    'skin_name' => $itemData->skin_name,
-                    'image' => $itemData->image,
-                    'steam_price' => $itemData->steam_price,
-                    'quality' => $itemData->quality,
-                    'rarity' => $itemData->rarity,
-                ];
-            }
+            $provablyData->nonce += 1;
+            $provablyData->save();
+
+            // Подготовка предметов с учетом RTP
+            $adjustedItems = $this->rtpService->getAdjustedDropChances($box, 
+                $caseItems->map(function($item) {
+                    return [
+                        'item_id' => $item->item->id,
+                        'item' => $item->item,
+                        'chance' => $item->chance,
+                        'price' => $item->item->steam_price
+                    ];
+                })->toArray()
+            );
+
+            // Используем Provably Fair с модифицированными шансами
+            $randFloat = $this->provablyFairRandom($provablyData->server_seed, $provablyData->client_seed, $provablyData->nonce);
+            $caseItem = $this->selectItemWithRTP($adjustedItems, $randFloat);
+
+            // Получаем объект предмета
+            $itemData = is_array($caseItem) ? $caseItem['item'] : $caseItem->item;
+            
+            $live = Lives::create([
+                'user_id' => $user->id,
+                'skin_id' => $itemData->id,
+                'box_id' => $box->id,
+                'from_where' => "BOX",
+                'price' => $itemData->steam_price,
+                'status' => "STOCK",
+            ]);
+            $liveIds[] = $live->id;
+            $resultItems[] = [
+                'id' => $live->id,
+                'weapon' => $itemData->weapon,
+                'skin_name' => $itemData->skin_name,
+                'image' => $itemData->image,
+                'steam_price' => $itemData->steam_price,
+                'quality' => $itemData->quality,
+                'rarity' => $itemData->rarity,
+            ];
+            
+            // Обновляем статистику RTP кейса
+            $this->rtpService->updateBoxStats($box, $box->price, $itemData->steam_price);
         }
 
-        if (!$demoOpen) {
-            if (!$hasFreeCase) {
-                $user->update([
-                    'balance' => $user->balance - $totalPrice,
-                    'total_bet' => $user->total_bet + $totalPrice,
-                    'event_points' => $user->event_points + $points
-                ]);
+        if (!$hasFreeCase) {
+            $user->update([
+                'balance' => $user->balance - $totalPrice,
+                'total_bet' => $user->total_bet + $totalPrice,
+                'event_points' => $user->event_points + $points
+            ]);
 
-                $this->updateEventScores($user->id, $points);
-            }
-            $this->liveService->addToLive($liveIds, 'BOX');
-            $this->redisService->updateUserBalance($user->id, $user->balance, $user->event_points);
+            $this->updateEventScores($user->id, $points);
         }
+        $this->liveService->addToLive($liveIds, 'BOX');
+        $this->redisService->updateUserBalance($user->id, $user->balance, $user->event_points);
 
-        if ($hasFreeCase && !$demoOpen) {
+        if ($hasFreeCase) {
             $freeCase->markAsUsed();
         }
 
-
-
-
-
-        return ['success' => true, 'winItems' => $resultItems, 'used_free_case' => $hasFreeCase && !$demoOpen];
+        return ['success' => true, 'winItems' => $resultItems, 'used_free_case' => $hasFreeCase];
     }
 
     public function sellItem(Request $request): array

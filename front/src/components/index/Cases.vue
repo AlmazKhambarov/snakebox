@@ -340,4 +340,36 @@ initLazyLoading() {
 .cases__case {
   position: relative;
 }
+
+/* Мобильные карточки кейсов — больше */
+@media (max-width: 495px) {
+  .cases__cases {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 2px !important;
+  }
+
+  .cases__case {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .cases__case img {
+    max-height: none !important;
+    width: 100% !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
+
+  .cases__case-name {
+    font-size: 14px !important;
+    margin-top: 4px !important;
+    padding: 0 4px !important;
+  }
+
+  .cases__case .sum {
+    font-size: 14px !important;
+    padding: 6px 10px !important;
+    margin-bottom: 4px !important;
+  }
+}
 </style>

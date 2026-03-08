@@ -44,6 +44,7 @@
                 @change-page-user="userItems"
                 :isUserLoading="isUserLoading"
                 :debounceGetItems="debounceGetItems"
+                :inventoryButtonFactor="inventoryButtonFactor"
                 v-model:isBalanceMode="isBalanceMode"
                 v-model:balanceAmount="balanceAmount"
                 @select-balance-mode="toggleBalanceMode"
