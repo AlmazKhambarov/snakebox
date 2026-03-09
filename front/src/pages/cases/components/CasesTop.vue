@@ -3,7 +3,7 @@
         <LoadingSpinner v-if="isLoading" text="Загрузка кейса..." />
         <template v-else>
         <div class="case__top-inner">
-            <div v-show="state !== 'opened'" class="case__slider multi" :class="{ 'multi-drums-active': state === 'opening' && rouletteItems.length > 1 }">
+            <div v-show="state !== 'opened'" class="case__slider multi" :class="{ 'multi-drums-active': (state === 'opening' || selectedCount > 1) && rouletteItems.length > 1 }">
                 <div class="case__slider-multi">
                     <!-- Background Decoration -->
                     <div class="multi-roulette-bg-image">
@@ -25,7 +25,7 @@
 
                     <div v-for="(list, listIdx) in rouletteItems" :key="listIdx" class="multi-roulette-column single-drum">
                         <div class="multi-roulette-wrapp">
-                            <div class="multi-roulette-inner horizontal" :ref="el => { if (el) drums[listIdx] = el }">
+                            <div class="multi-roulette-inner horizontal">
                                 <div
                                     class="item horizontal"
                                     v-for="(rouletteItem, idx) in list"
@@ -296,9 +296,13 @@ export default {
 
             fastOpen: false,
             selectedCount: 1,
-            drums: [], // Навигация по барабанам по индексу (рефы)
             isMobile: window.innerWidth <= 768,
         };
+    },
+    created() {
+        // drums хранится вне data() чтобы DOM-элементы не оборачивались в Vue Proxy
+        // Vue Proxy на DOM-элементах ломает GSAP анимацию (offsetLeft/offsetWidth)
+        this.drums = [];
     },
     computed: {
         ...mapState(useAuthStore, ["isAuth", "user"]),
@@ -310,13 +314,15 @@ export default {
         caseContent: {
             immediate: true,
             handler(val) {
-                if (val?.length) {
+                if (val?.length && this.state === 'default') {
                     this.initRoulette(this.selectedCount);
                 }
             },
         },
         selectedCount(val) {
-            this.initRoulette(val);
+            if (this.state === 'default') {
+                this.initRoulette(val);
+            }
         },
     },
     mounted() {
@@ -359,12 +365,11 @@ export default {
                     return;
                 }
                 this.$playSound("/sounds/click.mp3");
-                this.initRoulette(count);
-                this.state = "opening";
                 this.winItems = data.winItems;
+                this.state = "opening";
                 
-                // Показываем в рулетках выпавшие предметы
-                this.setWinItems(data.winItems);
+                // Генерируем рулетку с выигрышными предметами уже на месте
+                this.initRouletteWithWins(count, data.winItems);
 
                 this.$nextTick(() => {
                     // Даём DOM время отрисовать барабаны с правильными размерами
@@ -380,7 +385,7 @@ export default {
                             this.state = "opened";
                             this.$playSound("/sounds/contract-run.mp3");
                         }, totalDuration * 1000);
-                    }, 100);
+                    }, 200);
                 });
 
                 this.box.is_free = false;
@@ -400,13 +405,22 @@ export default {
 
             this.rouletteItems = Array.from({ length: Math.max(1, count) }, () => generateList());
         },
-        setWinItems(winItems) {
-            // winItems - это массив выпавших предметов
-            winItems.forEach((winItem, listIdx) => {
-                if (this.rouletteItems[listIdx]) {
-                    const winIdx = this.isMobile ? 25 : 40;
-                    this.rouletteItems[listIdx] = this.rouletteItems[listIdx].map((item, i) => i === winIdx ? winItem : item);
-                }
+        initRouletteWithWins(count, winItems) {
+            if (!this.caseContent?.length) return;
+            
+            const itemCount = this.isMobile ? 30 : 50;
+            const winIdx = this.isMobile ? 25 : 40;
+
+            this.rouletteItems = Array.from({ length: Math.max(1, count) }, (_, drumIdx) => {
+                const list = Array.from({ length: itemCount }, (_, i) => {
+                    // Ставим выигрышный предмет сразу на нужную позицию
+                    if (i === winIdx && winItems[drumIdx]) {
+                        return { ...winItems[drumIdx] };
+                    }
+                    const randomIndex = this.randomInteger(0, this.caseContent.length - 1);
+                    return this.caseContent[randomIndex];
+                });
+                return list;
             });
         },
 
@@ -420,6 +434,11 @@ export default {
         },
         animateRoulette(winItemIndex, duration = 8.5, drumDelay = 1.5) {
             this.resetTransform();
+
+            // Берём drum-элементы напрямую из DOM чтобы избежать проблем с реактивностью
+            const drumEls = this.$el.querySelectorAll('.multi-roulette-inner.horizontal');
+            // Обновляем drums массив свежими элементами
+            this.drums = Array.from(drumEls);
 
             this.drums.forEach((list, listIdx) => {
                 if (!list || listIdx >= this.rouletteItems.length) return;
@@ -443,7 +462,7 @@ export default {
                 const thisDuration = duration + (drumDelay * listIdx);
 
                 let prevIndex = -1;
-                const playSound = !this.isMobile; // Отключаем тик на мобилке для производительности
+                const playSound = !this.isMobile;
                 const tl = gsap.timeline({
                     onUpdate: playSound ? () => {
                         const currentX = gsap.getProperty(list, "x");
