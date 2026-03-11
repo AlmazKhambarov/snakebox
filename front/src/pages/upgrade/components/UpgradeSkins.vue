@@ -521,30 +521,35 @@ export default {
     watch: {
         inventoryButtonFactor: "updatePriceRange",
         selectedUserItem: "updatePriceRange",
+        balanceAmount: "updatePriceRange",
     },
     methods: {
         isItemLocked(item) {
-            // Если пользователь не выбрал свой предмет, ничего не блокируем
-            if (!this.selectedUserItem || !this.selectedUserItem.item) {
+            let userItemPrice = 0;
+
+            if (this.isBalanceMode && this.balanceAmount > 0) {
+                userItemPrice = this.balanceAmount * 100; // балансAmount в монетах, steam_price в копейках
+            } else if (this.selectedUserItem && this.selectedUserItem.item) {
+                userItemPrice = this.selectedUserItem.item.steam_price;
+            } else {
                 return false;
             }
-
-            // Получаем цену выбранного предмета пользователя
-            const userItemPrice = this.selectedUserItem.item.steam_price;
             
             // Предмет заблокирован, если его цена меньше или равна цене предмета пользователя + 1 монета (100 в формате API)
-            // Например: если выбран предмет за 100 монет (10000), то блокируются предметы <= 101 монеты (10100)
             return item.steam_price <= userItemPrice + 100;
         },
         updatePriceRange() {
-            if (
-                !this.selectedUserItem?.item?.steam_price ||
-                !this.inventoryButtonFactor
-            )
-                return;
+            if (!this.inventoryButtonFactor) return;
 
-            const userPrice =
-                Number(this.selectedUserItem.item.steam_price) / 100;
+            let userPrice = 0;
+            if (this.isBalanceMode && this.balanceAmount > 0) {
+                userPrice = Number(this.balanceAmount);
+            } else if (this.selectedUserItem?.item?.steam_price) {
+                userPrice = Number(this.selectedUserItem.item.steam_price) / 100;
+            } else {
+                return;
+            }
+
             const factor = this.inventoryButtonFactor.toString().trim();
 
             let min = 0;

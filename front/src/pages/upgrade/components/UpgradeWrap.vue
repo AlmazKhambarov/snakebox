@@ -43,7 +43,32 @@
                     </div>
                 </div>
             </div>
-            <div class="upgrade__item-overlay" v-show="!selectedUserItem">
+            <div class="upgrade__item-skin upgrade__balance-display" v-else-if="isBalanceMode && balanceAmount > 0">
+                <div class="item__top">
+                    <div class="sum sum--xs sum--bgWhite itemPrice">
+                        <div
+                            class="icon"
+                            style="mask-image: url('images/icons/coin.svg')"
+                        >
+                            <div class="icon__wrapp"></div>
+                        </div>
+                        {{ balanceAmount }}
+                    </div>
+                </div>
+                <div class="item__center">
+                    <div class="upgrade__balance-icon">
+                        <div
+                            class="icon"
+                            style="mask-image: url('images/icons/coin.svg')"
+                        ></div>
+                    </div>
+                </div>
+                <div class="item__bottom">
+                    <div class="item__model">Баланс</div>
+                    <div class="item__name">{{ balanceAmount }} монет</div>
+                </div>
+            </div>
+            <div class="upgrade__item-overlay" v-show="!hasUserInput">
                 <div class="empty">
                     <div
                         class="icon"
@@ -59,12 +84,12 @@
                 <img
                     src="/images/cursor.png"
                     class="upgrade__cursor"
-                    v-show="selectedSiteItem && selectedUserItem"
+                    v-show="selectedSiteItem && hasUserInput"
                 />
                 <div
                     class="upgrade__center-progress"
                     id="progress"
-                    v-if="selectedSiteItem && selectedUserItem"
+                    v-if="selectedSiteItem && hasUserInput"
                 >
                     <svg
                         viewBox="0 0 100 100"
@@ -92,12 +117,12 @@
                 <div class="upgrade__center-start">
                     <div
                         class="upgrade__center-chances"
-                        v-show="selectedSiteItem && selectedUserItem"
+                        v-show="selectedSiteItem && hasUserInput"
                     >
                         {{ percent.toFixed(2) }}%
                     </div>
                     <img
-                        v-show="!(selectedSiteItem && selectedUserItem)"
+                        v-show="!(selectedSiteItem && hasUserInput)"
                         src="/assets/icons/logo.png"
                         class="upgrade__center-logo"
                         alt=""
@@ -183,6 +208,8 @@ export default {
         percent: Number,
         state: String,
         refresh: Function,
+        isBalanceMode: Boolean,
+        balanceAmount: Number,
     },
     data() {
         return {
@@ -192,6 +219,9 @@ export default {
         };
     },
     computed: {
+        hasUserInput() {
+            return this.selectedUserItem || (this.isBalanceMode && this.balanceAmount > 0);
+        },
         percentInDeg() {
             return (this.percent / 100) * 360;
         },

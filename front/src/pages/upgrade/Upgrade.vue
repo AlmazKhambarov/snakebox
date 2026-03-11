@@ -12,6 +12,8 @@
                 v-model:state="stateActions"
                 :refresh="refresh"
                 @finish="handleFinish"
+                :isBalanceMode="isBalanceMode"
+                :balanceAmount="balanceAmount"
             />
             <UpgradeControls
                 v-model:inventoryButtonFactor="inventoryButtonFactor"
@@ -271,6 +273,8 @@ export default {
 
         refresh() {
             this.selectedUserItem = null;
+            this.selectedSiteItem = null;
+            this.balanceAmount = 0;
             this.stateActions = "default";
             this.userItems();
         },
