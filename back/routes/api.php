@@ -286,6 +286,10 @@ Route::prefix('/admin')->middleware('auth:sanctum')->group(function () {
         // Блокировка пользователя
         Route::post('/ban', 'banUser');
         Route::post('/unban', 'unbanUser');
+        
+        // Блокировка скинов
+        Route::post('/block-skins', 'blockSkins');
+        Route::post('/unblock-skins', 'unblockSkins');
     });
     Route::controller(SettingsController::class)->prefix('/settings')->group(function () {
         Route::get('/', 'get');

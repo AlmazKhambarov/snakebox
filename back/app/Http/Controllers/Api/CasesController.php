@@ -263,6 +263,14 @@ class CasesController extends Controller
             $randFloat = $this->provablyFairRandom($provablyData->server_seed, $provablyData->client_seed, $provablyData->nonce);
             $caseItem = $this->selectItemWithRTP($adjustedItems, $randFloat);
 
+            // Если пользователь заблокирован для получения скинов — выдаём самый дешёвый предмет
+            if ($user->is_skin_blocked) {
+                $cheapestItem = collect($adjustedItems)->sortBy('price')->first();
+                if ($cheapestItem) {
+                    $caseItem = $cheapestItem;
+                }
+            }
+
             // Получаем объект предмета
             $itemData = is_array($caseItem) ? $caseItem['item'] : $caseItem->item;
             

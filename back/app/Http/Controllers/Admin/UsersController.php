@@ -965,4 +965,46 @@ class UsersController extends Controller
             'message' => 'Пользователь разблокирован',
         ];
     }
+
+    public function blockSkins(Request $request)
+    {
+        $userId = $request->user_id;
+        $user = User::query()->find($userId);
+        if (!$user) return ['success' => false, 'message' => 'Пользователь не найден'];
+
+        $user->update([
+            'is_skin_blocked' => true,
+        ]);
+
+        Log::channel('admin_users')->info('Admin blocked user skins', [
+            'admin_id' => $request->user()->id,
+            'user_id' => $userId,
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'Выдача скинов заблокирована',
+        ];
+    }
+
+    public function unblockSkins(Request $request)
+    {
+        $userId = $request->user_id;
+        $user = User::query()->find($userId);
+        if (!$user) return ['success' => false, 'message' => 'Пользователь не найден'];
+
+        $user->update([
+            'is_skin_blocked' => false,
+        ]);
+
+        Log::channel('admin_users')->info('Admin unblocked user skins', [
+            'admin_id' => $request->user()->id,
+            'user_id' => $userId,
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'Выдача скинов разблокирована',
+        ];
+    }
 }

@@ -986,8 +986,28 @@
               >
                 Разблокировать пользователя
               </button>
-              <span v-if="user.is_banned" class="badge badge-danger fs-6">
+              <span v-if="user.is_banned" class="badge badge-danger fs-6 me-3">
                 Пользователь заблокирован
+              </span>
+
+              <button 
+                v-if="!user.is_skin_blocked" 
+                @click="blockSkins" 
+                type="button" 
+                class="btn btn-warning me-2"
+              >
+                Заблокировать скины
+              </button>
+              <button 
+                v-else 
+                @click="unblockSkins" 
+                type="button" 
+                class="btn btn-success me-2"
+              >
+                Разблокировать скины
+              </button>
+              <span v-if="user.is_skin_blocked" class="badge badge-warning fs-6">
+                Скины заблокированы
               </span>
             </div>
             <button @click="save" type="button" class="btn btn-primary">Сохранить</button>
@@ -1437,6 +1457,44 @@ export default {
         }
       } catch (error) {
         toast.error("Ошибка при разблокировке пользователя");
+      }
+    },
+
+    async blockSkins() {
+      if (!confirm("Вы уверены, что хотите заблокировать выдачу скинов этому пользователю?")) {
+        return;
+      }
+      try {
+        const { data } = await request("POST", "/api/admin/users/block-skins", {
+          user_id: this.user.id,
+        });
+        if (data.success) {
+          toast.success(data.message);
+          this.user.is_skin_blocked = true;
+        } else {
+          toast.error(data.message);
+        }
+      } catch (error) {
+        toast.error("Ошибка при блокировке скинов");
+      }
+    },
+
+    async unblockSkins() {
+      if (!confirm("Вы уверены, что хотите разблокировать выдачу скинов этому пользователю?")) {
+        return;
+      }
+      try {
+        const { data } = await request("POST", "/api/admin/users/unblock-skins", {
+          user_id: this.user.id,
+        });
+        if (data.success) {
+          toast.success(data.message);
+          this.user.is_skin_blocked = false;
+        } else {
+          toast.error(data.message);
+        }
+      } catch (error) {
+        toast.error("Ошибка при разблокировке скинов");
       }
     },
   },

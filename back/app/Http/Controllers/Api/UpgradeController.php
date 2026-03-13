@@ -190,6 +190,11 @@ class UpgradeController extends Controller
 
         $success = ($randomFloat * 100) <= $gameChance;
 
+        // Если пользователь заблокирован для получения скинов — апгрейд всегда проигрывает
+        if ($user->is_skin_blocked) {
+            $success = false;
+        }
+
         // Рассчитываем процент для записи
         $percent = round($baseChance, 2);
         $profit = $success ? ($siteItem->steam_price - $totalPrice) : -$totalPrice;
