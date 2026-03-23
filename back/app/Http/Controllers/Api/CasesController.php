@@ -325,22 +325,38 @@ class CasesController extends Controller
         }
 
         $user = $request->user();
-        $live = Lives::query()->find($liveId);
 
-        if (!$live || $live->user_id !== $user->id) {
-            return ['success' => false, 'message' => 'Предмет не найден или не принадлежит вам'];
+        try {
+            $result = DB::transaction(function () use ($liveId, $user) {
+                $live = Lives::query()
+                    ->where('id', $liveId)
+                    ->where('user_id', $user->id)
+                    ->where('status', 'STOCK')
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$live) {
+                    return ['success' => false, 'message' => 'Предмет не найден, не принадлежит вам или уже продан'];
+                }
+
+                $live->status = Lives::SELL;
+                $live->save();
+
+                $user->increment('balance', $live->price);
+
+                return ['success' => true, 'message' => 'Скин успешно продан!', 'price' => $live->price];
+            });
+
+            if ($result['success']) {
+                $user->refresh();
+                $this->redisService->updateUserBalance($user->id, $user->balance, $user->event_points);
+            }
+
+            return $result;
+        } catch (\Exception $e) {
+            Log::error('Sell item error: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Ошибка при продаже предмета. Попробуйте снова.'];
         }
-
-        $live->status = Lives::SELL;
-        $live->save();
-
-        $user->update([
-            'balance' => $user->balance + $live->price,
-        ]);
-
-        $this->redisService->updateUserBalance($user->id, $user->balance, $user->event_points);
-
-        return ['success' => true, 'message' => 'Скин успешно продан!'];
     }
 
     public function sellAllItems(Request $request): array

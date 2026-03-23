@@ -416,6 +416,7 @@ export default {
             showSortDropdown: false,
 
             debounceTimer: null,
+            isSelling: false,
         };
     },
     computed: {
@@ -554,44 +555,61 @@ export default {
             }, 600);
         },
         async sellItem(liveId) {
-            await request("POST", "/case/sell/item", {
-                liveId: liveId,
-            }).then(({ data }) => {
-                if (!data.success) {
-                    this.$toastr.error(data.message);
-                    return;
-                } else {
-                    this.$toastr.success(data.message);
-                    this.getItems();
-                }
-            });
+            if (this.isSelling) return;
+            this.isSelling = true;
+            try {
+                await request("POST", "/case/sell/item", {
+                    liveId: liveId,
+                }).then(({ data }) => {
+                    if (!data.success) {
+                        this.$toastr.error(data.message);
+                        return;
+                    } else {
+                        this.$toastr.success(data.message);
+                        this.getItems();
+                    }
+                });
+            } finally {
+                this.isSelling = false;
+            }
         },
         async withdraw(liveId) {
-            const item = this.userItems.find((i) => i.id === liveId);
-
-            if (item) item.status = "SENDING";
-            await request("POST", "/market/withdraw", {
-                liveId: liveId,
-            }).then(({ data }) => {
-                if (!data.success) {
-                    this.$toastr.error(data.message);
-                    return;
-                } else {
-                    this.$toastr.success(data.message);
-                    this.getItems();
-                }
-            });
+            if (this.isSelling) return;
+            this.isSelling = true;
+            try {
+                const item = this.userItems.find((i) => i.id === liveId);
+                if (item) item.status = "SENDING";
+                await request("POST", "/market/withdraw", {
+                    liveId: liveId,
+                }).then(({ data }) => {
+                    if (!data.success) {
+                        this.$toastr.error(data.message);
+                        return;
+                    } else {
+                        this.$toastr.success(data.message);
+                        this.getItems();
+                    }
+                });
+            } finally {
+                this.isSelling = false;
+            }
         },
         async sellAllItem() {
-            await request("POST", "/case/sell/allItem").then(({ data }) => {
-                if (!data.success) {
-                    this.$toastr.error(data.message);
-                    return;
-                } else {
-                    this.$toastr.success(data.message);
-                    this.getItems();
-                }
-            });
+            if (this.isSelling) return;
+            this.isSelling = true;
+            try {
+                await request("POST", "/case/sell/allItem").then(({ data }) => {
+                    if (!data.success) {
+                        this.$toastr.error(data.message);
+                        return;
+                    } else {
+                        this.$toastr.success(data.message);
+                        this.getItems();
+                    }
+                });
+            } finally {
+                this.isSelling = false;
+            }
         },
         subscribeSocket() {
             const socket = this["socket-client"];

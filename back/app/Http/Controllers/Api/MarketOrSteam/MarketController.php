@@ -38,6 +38,7 @@ class MarketController extends Controller
     $settings = Settings::query()->select(['market_key'])->first();
 
     if (!$user) return ['success' => false, 'message' => 'Авторизуйтесь'];
+    if ($user->is_skin_blocked) return ['success' => false, 'message' => 'Вывод временно заблокирован для вашего аккаунта'];
     if (is_null($user->trade_url)) return ['success' => false, 'message' => 'Укажите ссылку на обмен'];
     if (!$settings->market_key) return ['success' => false, 'message' => 'Серверная ошибка. Обратитесь в техническую поддержку'];
 

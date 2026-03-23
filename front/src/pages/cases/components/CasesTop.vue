@@ -297,6 +297,7 @@ export default {
             fastOpen: false,
             selectedCount: 1,
             isMobile: window.innerWidth <= 768,
+            isSelling: false,
         };
     },
     created() {
@@ -499,41 +500,53 @@ export default {
             this.initRoulette(this.selectedCount);
         },
         async sellItem(liveId) {
-            await request("POST", "/case/sell/item", {
-                liveId: liveId,
-            }).then(({ data }) => {
-                if (!data.success) {
-                    this.$toastr.error(data.message);
-                    return;
-                } else {
-                    this.$toastr.success(data.message);
-                    // Вместо полной перезагрузки удаляем проданный предмет из списка
-                    this.winItems = this.winItems.filter(item => item.id !== liveId);
-                    // Если предметов больше нет, возвращаемся в начальное состояние
-                    if (this.winItems.length === 0) {
-                        this.refresh();
-                    }
-                }
-            });
-        },
-        async sellAll() {
-            const itemsToSell = this.winItems.filter(item => item.id);
-            if (itemsToSell.length === 0) {
-                this.$toastr.error('Нет предметов для продажи (демо режим)');
-                return;
-            }
-            for (const item of itemsToSell) {
+            if (this.isSelling) return;
+            this.isSelling = true;
+            try {
                 await request("POST", "/case/sell/item", {
-                    liveId: item.id,
+                    liveId: liveId,
                 }).then(({ data }) => {
-                    if (data.success) {
-                        this.winItems = this.winItems.filter(w => w.id !== item.id);
+                    if (!data.success) {
+                        this.$toastr.error(data.message);
+                        return;
+                    } else {
+                        this.$toastr.success(data.message);
+                        // Вместо полной перезагрузки удаляем проданный предмет из списка
+                        this.winItems = this.winItems.filter(item => item.id !== liveId);
+                        // Если предметов больше нет, возвращаемся в начальное состояние
+                        if (this.winItems.length === 0) {
+                            this.refresh();
+                        }
                     }
                 });
+            } finally {
+                this.isSelling = false;
             }
-            if (this.winItems.length === 0 || !this.winItems.some(w => w.id)) {
-                this.$toastr.success('Все предметы проданы!');
-                this.refresh();
+        },
+        async sellAll() {
+            if (this.isSelling) return;
+            this.isSelling = true;
+            try {
+                const itemsToSell = this.winItems.filter(item => item.id);
+                if (itemsToSell.length === 0) {
+                    this.$toastr.error('Нет предметов для продажи (демо режим)');
+                    return;
+                }
+                for (const item of itemsToSell) {
+                    await request("POST", "/case/sell/item", {
+                        liveId: item.id,
+                    }).then(({ data }) => {
+                        if (data.success) {
+                            this.winItems = this.winItems.filter(w => w.id !== item.id);
+                        }
+                    });
+                }
+                if (this.winItems.length === 0 || !this.winItems.some(w => w.id)) {
+                    this.$toastr.success('Все предметы проданы!');
+                    this.refresh();
+                }
+            } finally {
+                this.isSelling = false;
             }
         },
         updateWidth() {

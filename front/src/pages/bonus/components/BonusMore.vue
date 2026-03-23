@@ -53,7 +53,7 @@
               class="icon coin"
               style="mask-image: url('/assets/icons/coin.svg')"
             ></div>
-            <span>35</span>
+            <span>0.5</span>
           </div>
         </div>
         <div class="bonus__more-item-desc">
@@ -102,7 +102,7 @@
               class="icon coin"
               style="mask-image: url('/assets/icons/coin.svg')"
             ></div>
-            <span>35</span>
+            <span>0.5</span>
           </div>
         </div>
         <div class="bonus__more-item-desc">

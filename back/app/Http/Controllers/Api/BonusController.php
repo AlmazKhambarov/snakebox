@@ -83,7 +83,7 @@ class BonusController extends Controller
           ]);
       }
 
-      $bonusAmount = 3500;
+      $bonusAmount = 50;
 
       BonusClaim::create([
         'user_id' => $user->id,
@@ -136,7 +136,7 @@ class BonusController extends Controller
             ];
         }
     
-        $bonusAmount = 3500;
+        $bonusAmount = 50;
         $user->increment('balance', $bonusAmount);
     
         $this->redisService->updateUserBalance($user->id, $user->balance, $user->event_points);
