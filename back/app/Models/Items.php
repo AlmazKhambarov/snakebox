@@ -15,5 +15,6 @@ class Items extends Model
         'weapon',
         'steam_price',
         'steam_price_before',
+        'game',
     ];
 }

@@ -153,13 +153,14 @@ class ContractsController extends Controller
         return Items::query()->orderBy('steam_price', 'asc')->first();
       });
 
-    // Если пользователь заблокирован для получения скинов — выдаём самый дешёвый предмет
+    // Если пользователь заблокирован для получения скинов — выдаём случайный предмет из самых дешёвых
     if ($user->is_skin_blocked) {
-      $cheapestItem = Items::query()->whereBetween('steam_price', [$min, $max])
+      $cheapItems = Items::query()->whereBetween('steam_price', [$min, $max])
         ->orderBy('steam_price', 'asc')
-        ->first();
-      if ($cheapestItem) {
-        $winItem = $cheapestItem;
+        ->limit(5)
+        ->get();
+      if ($cheapItems->isNotEmpty()) {
+        $winItem = $cheapItems->random();
       }
     }
 

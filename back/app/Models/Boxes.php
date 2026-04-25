@@ -20,6 +20,7 @@ class Boxes extends Model
         'total_stock',
         'in_stock',
         'type',
+        'game',
         'profit',
         'sound_pack',
         // RTP поля

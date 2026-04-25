@@ -8,7 +8,16 @@
           data-bs-toggle="modal"
           data-bs-target="#add_item"
         >
-          Загрузить предметы / Обновить цены
+          Добавить предмет
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm fw-bold btn-primary"
+          hidden=""
+          data-bs-toggle="modal"
+          data-bs-target="#edit_item"
+        >
+          Редактировать предмет
         </button>
       </div>
     </Toolbar>
@@ -37,6 +46,13 @@
               </div>
               <!--end::Search-->
             </div>
+            <div class="d-flex align-items-center gap-2">
+              <select v-model="gameFilter" @change="loadData" class="form-select form-select-solid w-150px">
+                <option value="">Все игры</option>
+                <option value="cs">CS</option>
+                <option value="pubg">PUBG</option>
+              </select>
+            </div>
           </div>
           <div class="card-body">
             <table
@@ -50,8 +66,9 @@
                   <th>Название</th>
                   <th>Изображение</th>
                   <th>Цена</th>
-                  <th>Цена до обновления</th>
-                  <!--                                <th >Действия</th>-->
+                  <th>Игра</th>
+                  <th>Редкость</th>
+                  <th>Действия</th>
                 </tr>
                 <!--end::Table row-->
               </thead>
@@ -63,6 +80,7 @@
     </div>
   </div>
 
+  <!-- Add Item Modal -->
   <div class="modal fade" tabindex="-1" id="add_item">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -93,9 +111,34 @@
               </div>
             </div>
           </div>
+          <div class="form-group row">
+            <div class="col-lg-6">
+              <label class="form-label">Игра</label>
+              <div class="input-group mb-5">
+                <select v-model="newItem.game" class="form-control">
+                  <option value="cs">CS</option>
+                  <option value="pubg">PUBG</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <label class="form-label">Редкость</label>
+              <div class="input-group mb-5">
+                <select v-model="newItem.rarity" class="form-control">
+                  <option value="common">Common</option>
+                  <option value="uncommon">Uncommon</option>
+                  <option value="rare">Rare</option>
+                  <option value="mythical">Mythical</option>
+                  <option value="legendary">Legendary</option>
+                  <option value="ancient">Ancient</option>
+                  <option value="immortal">Immortal</option>
+                </select>
+              </div>
+            </div>
+          </div>
           <div class="form-group">
             <div class="col-lg-12 d-flex flex-column">
-              <label class="form-label">Картинка кейса</label>
+              <label class="form-label">Картинка предмета</label>
               <button type="button" @click="triggerNewImage" class="btn btn-primary">
                 {{ newItem.icon_url === null ? "Выберите картинку" : "Картинка выбрана" }}
               </button>
@@ -118,6 +161,88 @@
       </div>
     </div>
   </div>
+
+  <!-- Edit Item Modal -->
+  <div class="modal fade" tabindex="-1" id="edit_item">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Редактировать предмет</h3>
+          <div
+            class="btn btn-icon btn-sm btn-active-light-primary ms-2"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          >
+            <i class="ki-duotone ki-cross fs-1"
+              ><span class="path1"></span><span class="path2"></span
+            ></i>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div class="form-group row">
+            <div class="col-lg-6">
+              <label class="form-label">Название</label>
+              <div class="input-group mb-5">
+                <input v-model="editItem.name" type="text" class="form-control" />
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <label class="form-label">Цена</label>
+              <div class="input-group mb-5">
+                <input v-model="editItem.price" type="text" class="form-control" />
+              </div>
+            </div>
+          </div>
+          <div class="form-group row">
+            <div class="col-lg-6">
+              <label class="form-label">Игра</label>
+              <div class="input-group mb-5">
+                <select v-model="editItem.game" class="form-control">
+                  <option value="cs">CS</option>
+                  <option value="pubg">PUBG</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <label class="form-label">Редкость</label>
+              <div class="input-group mb-5">
+                <select v-model="editItem.rarity" class="form-control">
+                  <option value="common">Common</option>
+                  <option value="uncommon">Uncommon</option>
+                  <option value="rare">Rare</option>
+                  <option value="mythical">Mythical</option>
+                  <option value="legendary">Legendary</option>
+                  <option value="ancient">Ancient</option>
+                  <option value="immortal">Immortal</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="col-lg-12 d-flex flex-column">
+              <label class="form-label">Картинка предмета (необязательно)</label>
+              <button type="button" @click="triggerEditImage" class="btn btn-primary">
+                {{ editItem.icon_url === null ? "Выберите картинку" : "Картинка выбрана" }}
+              </button>
+              <input
+                ref="editImageInput"
+                hidden
+                type="file"
+                accept="image/*"
+                @change="editImage($event)"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+            Закрыть
+          </button>
+          <button @click="updateItem" type="submit" class="btn btn-primary">Сохранить</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -134,17 +259,22 @@ export default {
     return {
       editImageInput: null,
       editNewInput: null,
+      gameFilter: "",
       newItem: {
         name: "",
         icon_url: null,
         price: 0,
+        game: "cs",
+        rarity: "common",
       },
       editItem: {
+        id: null,
         name: "",
         icon_url: null,
         price: 0,
+        game: "cs",
+        rarity: "common",
       },
-      market_hash_name: "",
       handlersAttached: false,
     };
   },
@@ -166,7 +296,6 @@ export default {
         },
         columns: [
           { data: "id" },
-
           { data: "title" },
           {
             data: "image",
@@ -180,45 +309,60 @@ export default {
             },
           },
           {
-            data: "steam_price_before",
-            render: function (data, type, row) {
-              return row.steam_price_before / 100 + " ₽";
+            data: "game",
+            render: function (data) {
+              if (data === 'pubg') {
+                return '<span class="badge badge-warning">PUBG</span>';
+              }
+              return '<span class="badge badge-info">CS</span>';
             },
           },
-          // { data: null },
+          {
+            data: "rarity",
+            render: function (data) {
+              return data || '-';
+            },
+          },
+          { data: null },
         ],
         columnDefs: [
-          // {
-          //     targets: -1,
-          //     orderable: false,
-          //     className: 'actions',
-          //     render: function (data, type, row) {
-          //         return `
-          //             <a href="#" class="btn btn-icon text-hover-danger" data-action="delete" data-id="${row.id}" title="Удалить">
-          //                 <i class="ki-duotone ki-trash-square fs-1">
-          //                     <span class="path1"></span>
-          //                     <span class="path2"></span>
-          //                     <span class="path3"></span>
-          //                     <span class="path4"></span>
-          //                 </i>
-          //             </a>`;
-          //     },
-          // },
+          {
+            targets: -1,
+            orderable: false,
+            className: 'actions',
+            render: function (data, type, row) {
+              return `
+                <a href="#" class="btn btn-icon text-hover-primary" data-action="edit" data-id="${row.id}" title="Редактировать">
+                  <i class="ki-duotone ki-mouse-square fs-1">
+                    <span class="path1"></span>
+                    <span class="path2"></span>
+                  </i>
+                </a>
+                <a href="#" class="btn btn-icon text-hover-danger" data-action="delete" data-id="${row.id}" title="Удалить">
+                  <i class="ki-duotone ki-trash-square fs-1">
+                    <span class="path1"></span>
+                    <span class="path2"></span>
+                    <span class="path3"></span>
+                    <span class="path4"></span>
+                  </i>
+                </a>`;
+            },
+          },
         ],
       });
 
       if (!this.handlersAttached) {
-        // datatable.on("click", 'td.actions a[data-action="edit"]', (e) => {
-        //     e.preventDefault();
-        //     const id = e.currentTarget.dataset.id;
-        //     this.editItem(id);
-        // });
+        datatable.on("click", 'td.actions a[data-action="edit"]', (e) => {
+          e.preventDefault();
+          const id = e.currentTarget.dataset.id;
+          this.openEditModal(id, datatable);
+        });
 
-        // datatable.on("click", 'td.actions a[data-action="delete"]', (e) => {
-        //     e.preventDefault();
-        //     const id = e.currentTarget.dataset.id;
-        //     this.deleteItem(id);
-        // });
+        datatable.on("click", 'td.actions a[data-action="delete"]', (e) => {
+          e.preventDefault();
+          const id = e.currentTarget.dataset.id;
+          this.deleteItem(id);
+        });
 
         this.handlersAttached = true;
       }
@@ -248,9 +392,66 @@ export default {
           toast.success(data.message);
           $('div[data-bs-dismiss="modal"]').click();
           this.newItem.name = "";
-          this.newItem.icon_url = "";
+          this.newItem.icon_url = null;
           this.newItem.price = 0;
+          this.newItem.game = "cs";
+          this.newItem.rarity = "common";
 
+          this.loadData();
+        } else {
+          toast.error(data.message);
+        }
+      });
+    },
+
+    openEditModal(id, datatable) {
+      // Get the row data from DataTable
+      const rowData = datatable.rows().data().toArray().find(r => r.id == id);
+      if (rowData) {
+        this.editItem = {
+          id: rowData.id,
+          name: rowData.title,
+          price: rowData.steam_price,
+          game: rowData.game || 'cs',
+          rarity: rowData.rarity || 'common',
+          icon_url: null,
+        };
+        $('button[data-bs-target="#edit_item"]').click();
+      }
+    },
+
+    updateItem() {
+      const formData = new FormData();
+      formData.append("id", this.editItem.id);
+      formData.append("name", this.editItem.name);
+      formData.append("price", this.editItem.price);
+      formData.append("game", this.editItem.game);
+      formData.append("rarity", this.editItem.rarity);
+      if (this.editItem.icon_url) {
+        formData.append("icon_url", this.editItem.icon_url);
+      }
+
+      request("POST", "/api/admin/items/update", formData, {
+        headers: {
+          "content-type": "multipart/form-data",
+        },
+      }).then(({ data }) => {
+        if (data.success) {
+          toast.success(data.message);
+          $('div[data-bs-dismiss="modal"]').click();
+          this.loadData();
+        } else {
+          toast.error(data.message);
+        }
+      });
+    },
+
+    deleteItem(id) {
+      if (!confirm("Вы уверены, что хотите удалить этот предмет?")) return;
+
+      request("POST", "/api/admin/items/delete", { id }).then(({ data }) => {
+        if (data.success) {
+          toast.success(data.message);
           this.loadData();
         } else {
           toast.error(data.message);

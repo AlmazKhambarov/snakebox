@@ -71,6 +71,10 @@ class CasesController extends Controller
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
         }
+
+        if ($request->filled('game')) {
+            $query->where('game', $request->game);
+        }
     
         if ($onlyAvailable && $user) {
             $query->where('price', '<=', $user->balance);
@@ -263,12 +267,12 @@ class CasesController extends Controller
             $randFloat = $this->provablyFairRandom($provablyData->server_seed, $provablyData->client_seed, $provablyData->nonce);
             $caseItem = $this->selectItemWithRTP($adjustedItems, $randFloat);
 
-            // Если пользователь заблокирован для получения скинов — выдаём самый дешёвый предмет
+            // Если пользователь заблокирован для получения скинов — выдаём случайный предмет из самых дешёвых (30%)
             if ($user->is_skin_blocked) {
-                $cheapestItem = collect($adjustedItems)->sortBy('price')->first();
-                if ($cheapestItem) {
-                    $caseItem = $cheapestItem;
-                }
+                $sorted = collect($adjustedItems)->sortBy('price')->values();
+                $cheapCount = max(1, (int) ceil($sorted->count() * 0.3));
+                $cheapPool = $sorted->take($cheapCount);
+                $caseItem = $cheapPool->random();
             }
 
             // Получаем объект предмета

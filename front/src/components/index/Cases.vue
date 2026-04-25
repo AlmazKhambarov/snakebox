@@ -5,34 +5,27 @@
         <div class="cases__select-game">
           <button
             type="button"
-            class="cases__select-game-btn active"
-            data-game="0"
+            class="cases__select-game-btn"
+            :class="{ active: selectedGame === 'cs' }"
+            @click="selectGame('cs')"
           >
             <div
               class="icon"
               style="mask-image: url('images/icons/cs2.svg')"
             ></div>
           </button>
-          <!-- <button
-                        type="button"
-                        class="cases__select-game-btn"
-                        data-game="1"
-                    >
-                        <div
-                            class="icon"
-                            style="mask-image: url('images/icons/dota2.svg')"
-                        ></div>
-                    </button>
-                    <button
-                        type="button"
-                        class="cases__select-game-btn"
-                        data-game="2"
-                    >
-                        <div
-                            class="icon"
-                            style="mask-image: url('images/icons/rust.svg')"
-                        ></div>
-                    </button> -->
+          <button
+            type="button"
+            class="cases__select-game-btn"
+            :class="{ active: selectedGame === 'pubg' }"
+            @click="selectGame('pubg')"
+          >
+            <div
+              class="icon"
+              style="mask-image: url('images/icons/pubg.svg')"
+            ></div>
+            <span style="font-size: 11px; font-weight: 600;">PUBG</span>
+          </button>
         </div>
         <button @click="resetFilters" type="button" class="btn-gray clearAll">
           <div
@@ -191,6 +184,7 @@ export default {
       isOpen: [],
       observer: null,
       isLoading: true,
+      selectedGame: "cs",
     };
   },
   mounted() {
@@ -238,6 +232,7 @@ export default {
           max_price: this.maxPrice * 100,
           available: this.available,
           user: this.user,
+          game: this.selectedGame,
         }).then(({ data }) => {
           if (!data.success) {
             this.$toastr.error(data.message);
@@ -259,6 +254,11 @@ export default {
       this.maxPrice = null;
       this.filterInputSearch = "";
       this.available = false;
+      this.selectedGame = "cs";
+      this.getBoxes();
+    },
+    selectGame(game) {
+      this.selectedGame = game;
       this.getBoxes();
     },
 initLazyLoading() {

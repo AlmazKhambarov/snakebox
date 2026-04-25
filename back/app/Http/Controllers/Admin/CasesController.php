@@ -72,6 +72,7 @@ class CasesController extends Controller
       'is_active' => $request->is_active,
       'is_visible' => $request->is_visible,
       'type' => $request->type,
+      'game' => $request->game ?? 'cs',
       'sound_pack' => $request->sound_pack
     ]);
 
@@ -163,6 +164,7 @@ class CasesController extends Controller
         'is_active' => $request->is_active,
         'is_visible' => $request->is_visible,
         'type' => $request->type,
+        'game' => $request->game ?? $box->game,
         'sound_pack' => $request->sound_pack,
     ]);
 

@@ -67,6 +67,7 @@
                   <!-- <th>Максимальное кол-во открытий</th> -->
                   <!-- <th>Остаток</th> -->
                   <th>Тип</th>
+                  <th>Игра</th>
                   <th>Профит</th>
                   <th>Саунд Пак</th>
                   <th>Действия</th>
@@ -176,6 +177,17 @@
                 </select>
               </div>
             </div>
+            <div class="col-lg-6">
+              <label class="form-label">Игра</label>
+              <div class="input-group mb-5">
+                <select v-model="newCase.game" class="form-control">
+                  <option value="cs">CS</option>
+                  <option value="pubg">PUBG</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="form-group row">
             <div class="col-lg-6">
               <label class="form-label">Sound Pack</label>
               <div class="input-group mb-5">
@@ -321,6 +333,17 @@
               </div>
             </div>
             <div class="col-lg-6">
+              <label class="form-label">Игра</label>
+              <div class="input-group mb-5">
+                <select v-model="editCase.game" class="form-control">
+                  <option value="cs">CS</option>
+                  <option value="pubg">PUBG</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="form-group row">
+            <div class="col-lg-6">
               <label class="form-label">Sound Pack</label>
               <div class="input-group mb-5">
                 <select v-model="editCase.sound_pack" class="form-control">
@@ -396,6 +419,7 @@ export default {
         is_active: 1,
         is_visible: 1,
         type: "default",
+        game: "cs",
         sound_pack: "default",
       },
       editCase: {
@@ -407,6 +431,7 @@ export default {
         is_active: 1,
         is_visible: 1,
         type: "default",
+        game: "cs",
         sound_pack: "default",
       },
       handlersAttached: false,
@@ -463,6 +488,15 @@ export default {
           },
           {
             data: "type",
+          },
+          {
+            data: "game",
+            render: (data) => {
+              if (data === 'pubg') {
+                return '<span class="badge badge-warning">PUBG</span>';
+              }
+              return '<span class="badge badge-info">CS</span>';
+            },
           },
           {
             data: "profit",
@@ -523,7 +557,9 @@ export default {
 
       const formData = new FormData();
       for (let key in this.newCase) {
-        formData.append(key, this.newCase[key]);
+        if (this.newCase[key] !== null && this.newCase[key] !== undefined) {
+          formData.append(key, this.newCase[key]);
+        }
       }
       formData.append("category_id", newCategoryId);
 
@@ -567,7 +603,9 @@ export default {
 
       const formData = new FormData();
       for (let key in this.editCase) {
-        formData.append(key, this.editCase[key]);
+        if (this.editCase[key] !== null && this.editCase[key] !== undefined) {
+          formData.append(key, this.editCase[key]);
+        }
       }
       formData.append("category_id", newCategoryId);
       formData.append("item_id", newItemId);

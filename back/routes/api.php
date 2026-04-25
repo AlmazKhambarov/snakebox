@@ -258,6 +258,8 @@ Route::prefix('/admin')->middleware('auth:sanctum')->group(function () {
     Route::controller(ItemsController::class)->prefix('/items')->group(function () {
         Route::get('/', 'get');
         Route::post('/create', 'createItem');
+        Route::post('/update', 'updateItem');
+        Route::post('/delete', 'deleteItem');
 
         Route::controller(MarketController::class)->prefix('/market')->group(function () {
             Route::post('/prices', 'updatePrices');
