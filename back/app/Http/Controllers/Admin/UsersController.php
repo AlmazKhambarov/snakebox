@@ -32,39 +32,39 @@ class UsersController extends Controller
         // ========== ДЕПОЗИТЫ ==========
         $totalDeposited = $user->total_deposited ?? 0;
         $depositsCount = Payment::where('user_id', $user->id)
-            ->where('status', Payment::PAID)
+            ->where('status', Payment::STATUS_APPROVED)
             ->count();
         $depositsSum = Payment::where('user_id', $user->id)
-            ->where('status', Payment::PAID)
+            ->where('status', Payment::STATUS_APPROVED)
             ->sum('amount');
         $avgDeposit = $depositsCount > 0 ? round($depositsSum / $depositsCount, 2) : 0;
         $maxDeposit = Payment::where('user_id', $user->id)
-            ->where('status', Payment::PAID)
+            ->where('status', Payment::STATUS_APPROVED)
             ->max('amount') ?? 0;
         $minDeposit = Payment::where('user_id', $user->id)
-            ->where('status', Payment::PAID)
+            ->where('status', Payment::STATUS_APPROVED)
             ->min('amount') ?? 0;
         
         // Депозиты по периодам
         $now = Carbon::now();
         $todayDeposits = Payment::where('user_id', $user->id)
-            ->where('status', Payment::PAID)
+            ->where('status', Payment::STATUS_APPROVED)
             ->whereDate('created_at', $now->toDateString())
             ->sum('amount') ?? 0;
         $weekDeposits = Payment::where('user_id', $user->id)
-            ->where('status', Payment::PAID)
+            ->where('status', Payment::STATUS_APPROVED)
             ->where('created_at', '>=', $now->copy()->subDays(7))
             ->sum('amount') ?? 0;
         $monthDeposits = Payment::where('user_id', $user->id)
-            ->where('status', Payment::PAID)
+            ->where('status', Payment::STATUS_APPROVED)
             ->where('created_at', '>=', $now->copy()->subDays(30))
             ->sum('amount') ?? 0;
         
         $pendingDeposits = Payment::where('user_id', $user->id)
-            ->where('status', Payment::PENDING)
+            ->where('status', Payment::STATUS_PENDING)
             ->sum('amount') ?? 0;
         $failedDeposits = Payment::where('user_id', $user->id)
-            ->where('status', Payment::FAILED)
+            ->where('status', Payment::STATUS_DECLINED)
             ->sum('amount') ?? 0;
 
         // ========== ВЫВОДЫ ==========
@@ -201,11 +201,11 @@ class UsersController extends Controller
             ->orderBy('created_at', 'desc')
             ->first();
         $firstDeposit = Payment::where('user_id', $user->id)
-            ->where('status', Payment::PAID)
+            ->where('status', Payment::STATUS_APPROVED)
             ->orderBy('created_at', 'asc')
             ->first();
         $lastDeposit = Payment::where('user_id', $user->id)
-            ->where('status', Payment::PAID)
+            ->where('status', Payment::STATUS_APPROVED)
             ->orderBy('created_at', 'desc')
             ->first();
 

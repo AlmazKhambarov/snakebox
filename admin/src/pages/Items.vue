@@ -287,13 +287,16 @@ export default {
         searchDelay: 500,
         processing: true,
         serverSide: true,
-        ajax: {
-          url: `${import.meta.env.VITE_API_URL}/api/admin/items`,
-          type: "GET",
-          headers: {
-            Authorization: "Bearer " + Cookies.get("token"),
+          ajax: {
+            url: `${import.meta.env.VITE_API_URL}/api/admin/items`,
+            type: "GET",
+            headers: {
+              Authorization: "Bearer " + Cookies.get("token"),
+            },
+            data: (d) => {
+              d.game = this.gameFilter;
+            }
           },
-        },
         columns: [
           { data: "id" },
           { data: "title" },
@@ -312,9 +315,9 @@ export default {
             data: "game",
             render: function (data) {
               if (data === 'pubg') {
-                return '<span class="badge badge-warning">PUBG</span>';
+                return '<div class="d-flex align-items-center"><img src="/images/icons/pubg.svg" width="20" height="20" class="me-2" style="filter: brightness(0); opacity: 0.7;"><span class="badge badge-warning">PUBG</span></div>';
               }
-              return '<span class="badge badge-info">CS</span>';
+              return '<div class="d-flex align-items-center"><img src="/images/icons/cs2.svg" width="20" height="20" class="me-2" style="filter: brightness(0); opacity: 0.7;"><span class="badge badge-info">CS</span></div>';
             },
           },
           {

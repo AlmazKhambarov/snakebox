@@ -227,7 +227,10 @@
             <div class="uc-section">
               <div class="uc-confirm-row">
                 <span>OLISHNI TASDIQLASH</span>
-                <span class="uc-min-text">Minimal summa yechish: <strong>60 UC</strong></span>
+                <span v-if="ucAmount > 0" class="uc-cost-info">
+                  Sizning balansingizdan <strong>{{ (ucAmount * 1.6).toFixed(0) }} coin</strong> yechiladi
+                </span>
+                <span v-else class="uc-min-text">Minimal summa yechish: <strong>60 UC</strong></span>
               </div>
               <button
                 @click="buyUC"
@@ -795,6 +798,19 @@ initLazyLoading() {
 
 .uc-min-text strong {
   color: rgba(255, 255, 255, 0.7);
+}
+
+.uc-cost-info {
+  font-size: 11px;
+  font-weight: 600;
+  color: #00ff64;
+  text-transform: none;
+}
+
+.uc-cost-info strong {
+  font-size: 13px;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(0, 255, 100, 0.4);
 }
 
 /* Submit Button */

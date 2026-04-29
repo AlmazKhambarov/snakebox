@@ -117,7 +117,7 @@ export default {
                     { data: "amount" },
                     {
                         data: "price",
-                        render: (data) => (data / 100).toLocaleString() + " UZS",
+                        render: (data, type, row) => (row.amount * 250).toLocaleString() + " UZS",
                     },
                     {
                         data: "status",

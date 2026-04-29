@@ -20,9 +20,15 @@ class ItemsController extends Controller
         $this->marketService = $marketService;
     }
 
-    public function get()
+    public function get(Request $request)
     {
-        return datatables(Items::query())->toJson();
+        $query = Items::query();
+        
+        if ($request->filled('game')) {
+            $query->where('game', $request->game);
+        }
+
+        return datatables($query)->toJson();
     }
 
     public function createItem(Request $request): array
