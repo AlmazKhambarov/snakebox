@@ -152,7 +152,7 @@
                             x-show="item.key === 'skin'"
                             style="display: none"
                         >
-                            <p>Предмет ценой до 500₽</p>
+                            <p>Предмет ценой до 500 UZS</p>
                             <div
                                 class="icon"
                                 style="
@@ -191,7 +191,7 @@
                             x-show="item.key === 'money'"
                             style="display: none"
                         >
-                            <p>До 500₽ на баланс</p>
+                            <p>До 500 UZS на баланс</p>
                             <div
                                 class="icon"
                                 style="
@@ -204,7 +204,7 @@
                             x-show="item.key === 'case'"
                             style="display: none"
                         >
-                            <p>Любой кейс до 500₽</p>
+                            <p>Любой кейс до 500 UZS</p>
                             <div
                                 class="icon"
                                 style="

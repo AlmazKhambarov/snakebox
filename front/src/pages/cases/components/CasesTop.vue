@@ -184,47 +184,57 @@
                         </div>
                     </div>
                 </button>
+                <!-- Non-PUBG: insufficient balance -->
                 <div
-                    v-if="
-                        user.balance < box.price &&
-                        state === 'default' &&
-                        isAuth &&
-                        !box.is_free
-                    "
+                    v-if="box.game !== 'pubg' && user.balance < box.price && state === 'default' && isAuth && !box.is_free"
                     class="page__controls-main-btn case__controls-not-have"
                 >
                     <div class="case__controls-not-have-top">
                         <p>На балансе</p>
                         <div class="sum">
-                            <div
-                                class="icon coin"
-                                style="
-                                    mask-image: url('/assets/icons/coin.svg');
-                                "
-                            ></div>
+                            <div class="icon coin" style="mask-image: url('/assets/icons/coin.svg');"></div>
                             <span>{{ user.balance / 100 }}</span>
                         </div>
                         <p>из</p>
                         <div class="sum">
-                            <div
-                                class="icon coin"
-                                style="
-                                    mask-image: url('/assets/icons/coin.svg');
-                                "
-                            ></div>
+                            <div class="icon coin" style="mask-image: url('/assets/icons/coin.svg');"></div>
                             <span>{{ box.price / 100 }}</span>
                         </div>
                     </div>
                     <div class="case__controls-not-have-bottom">
-                        <p>Пополните ещё на</p>
+                        <span>Не хватает:</span>
                         <div class="sum">
-                            <div
-                                class="icon"
-                                style="
-                                    mask-image: url('/assets/icons/coin.svg');
-                                "
-                            ></div>
+                            <div class="icon coin" style="mask-image: url('/assets/icons/coin.svg');"></div>
                             <span>{{ (box.price - user.balance) / 100 }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PUBG: UC purchase block -->
+                <div
+                    v-if="box.game === 'pubg' && user.balance < box.price && state === 'default' && isAuth && !box.is_free"
+                    class="uc-buy-block"
+                >
+                    <div class="uc-buy-block__inner">
+                        <div class="uc-buy-block__header">
+                            <h3 class="uc-buy-block__title">Not enough UC</h3>
+                            <p class="uc-buy-block__subtitle">You need <strong>{{ (box.price - user.balance) / 100 }}</strong> UC more</p>
+                        </div>
+                        <div class="uc-buy-block__form">
+                            <input
+                                type="number"
+                                v-model.number="ucAmount"
+                                class="uc-buy-block__input"
+                                placeholder="Enter UC amount"
+                                min="1"
+                            />
+                            <button
+                                @click="buyUC"
+                                class="uc-buy-block__btn"
+                                type="button"
+                            >
+                                Buy UC
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -298,6 +308,8 @@ export default {
             selectedCount: 1,
             isMobile: window.innerWidth <= 768,
             isSelling: false,
+            ucModalAmount: 0,
+            ucAmount: 0,
         };
     },
     created() {
@@ -330,15 +342,22 @@ export default {
         window.addEventListener("resize", this.updateWidth);
         window.addEventListener("resize", this.updateWidth);
         this.tickSound = new Audio("/sounds/tick.mp3");
-        const savedFast = Cookies.get("fastOpen");
-        if (savedFast !== undefined) {
-            this.fastOpen = savedFast === "true";
-        }
+        // Initialize fastOpen based on the box's fast_open flag (admin controlled)
+        this.fastOpen = !!this.box?.fast_open;
     },
     beforeUnmount() {
         window.removeEventListener("resize", this.updateWidth);
     },
     methods: {
+        async buyUC() {
+            if (this.ucAmount <= 0) return;
+            const { data } = await request("POST", "/user/uc/buy", { amount: this.ucAmount });
+            if (data.success) {
+                this.$toastr.success("UC успешно куплены!");
+            } else {
+                this.$toastr.error(data.message);
+            }
+        },
         playTick() {
             if (!this.tickSound) return;
             this.tickSound.currentTime = 0;
@@ -559,6 +578,101 @@ export default {
 };
 </script>
 <style scoped>
+
+/* ── UC Purchase Block (PUBG) ── */
+.uc-buy-block {
+    width: 100%;
+    margin-top: 12px;
+}
+
+.uc-buy-block__inner {
+    background: linear-gradient(135deg, rgba(20, 20, 30, 0.9), rgba(35, 30, 15, 0.85));
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    border-radius: 14px;
+    padding: 24px 20px;
+    text-align: center;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 40px rgba(255, 215, 0, 0.06);
+    backdrop-filter: blur(12px);
+}
+
+.uc-buy-block__header {
+    margin-bottom: 18px;
+}
+
+.uc-buy-block__title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffd700;
+    margin: 0 0 6px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    text-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+}
+
+.uc-buy-block__subtitle {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+}
+
+.uc-buy-block__subtitle strong {
+    color: #fff;
+    font-weight: 600;
+}
+
+.uc-buy-block__form {
+    display: flex;
+    gap: 0;
+    max-width: 320px;
+    margin: 0 auto;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.uc-buy-block__input {
+    flex: 1;
+    padding: 12px 16px;
+    font-size: 15px;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    color: #fff;
+    outline: none;
+    min-width: 0;
+    font-weight: 500;
+}
+
+.uc-buy-block__input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.uc-buy-block__input:focus {
+    background: rgba(0, 0, 0, 0.65);
+}
+
+.uc-buy-block__btn {
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #ffd700, #f5a623);
+    color: #1a1a1a;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    transition: all 0.25s ease;
+}
+
+.uc-buy-block__btn:hover {
+    background: linear-gradient(135deg, #ffe44d, #ffb833);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.35);
+    transform: translateY(-1px);
+}
+
+.uc-buy-block__btn:active {
+    transform: translateY(0);
+}
 .case__multiplier-selector {
     display: flex;
     justify-content: center;

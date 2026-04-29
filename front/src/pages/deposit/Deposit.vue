@@ -130,7 +130,7 @@
                                         <div
                                             class="icon"
                                             style="
-                                                mask-image: url('/images/icons/rub.svg');
+                                                mask-image: url('/images/icons/uzs.svg');
                                             "
                                         ></div>
                                     </div>

@@ -40,8 +40,18 @@ class User extends Authenticatable
         return [
             'password' => 'hashed',
             'is_skin_blocked' => 'boolean',
+            'uc_balance' => 'integer',
         ];
     }
+
+    /**
+     * Increment user's UC balance.
+     */
+    public function addUC(int $amount): void
+    {
+        $this->increment('uc_balance', $amount);
+    }
+
 
     public function referrer()
     {

@@ -7,17 +7,24 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Payment extends Model
 {
+    use \Illuminate\Database\Eloquent\Factories\HasFactory;
 
-    protected $casts = [
-        'metadata' => 'array',
-    ];
+    // Types
+    const TYPE_UC = 'uc';
 
-    public const PENDING = 0;
-    public const PAID = 1;
-    public const CANCELLED = 2;
-    public const FAILED = 3;
+    // Statuses (int column in DB)
+    const STATUS_PENDING = 0;
+    const STATUS_APPROVED = 1;
+    const STATUS_DECLINED = 2;
 
     protected $guarded = [];
+
+    protected $casts = [
+        'price' => 'integer',
+        'amount' => 'integer',
+        'status' => 'integer',
+        'type' => 'string',
+    ];
 
     public function user(): BelongsTo
     {
@@ -29,3 +36,4 @@ class Payment extends Model
         return $this->belongsTo(Promocode::class, 'promocode_id');
     }
 }
+?>

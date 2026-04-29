@@ -21,6 +21,7 @@ class Boxes extends Model
         'in_stock',
         'type',
         'game',
+        'fast_open',
         'profit',
         'sound_pack',
         // RTP поля
@@ -51,6 +52,7 @@ class Boxes extends Model
         'auto_disabled_at' => 'datetime',
         'is_active' => 'boolean',
         'is_visible' => 'boolean',
+        'fast_open' => 'boolean',
     ];
 
     public function category()

@@ -74,7 +74,7 @@
                 </div>
               </div>
             </router-link>
-            <div class="giveaway__wrapp-winner-item-image tooltip-bottom" :data-tippy-content="`<p>${winner.item.price}₽</p> ${winner.item.name}`">
+            <div class="giveaway__wrapp-winner-item-image tooltip-bottom" :data-tippy-content="`<p>${winner.item.price} UZS</p> ${winner.item.name}`">
               <img :src="winner.item.image" :alt="winner.item.name">
             </div>
           </div>

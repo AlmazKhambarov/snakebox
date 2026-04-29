@@ -108,7 +108,8 @@ Route::controller(UserController::class)->prefix('/user')->group(function () {
     Route::get('/items', 'getItems')->middleware(['auth:sanctum', \App\Http\Middleware\CheckUserBanned::class]);
     Route::post('/trade-link', 'tradeLink')->middleware(['auth:sanctum', \App\Http\Middleware\CheckUserBanned::class]);
     Route::get('/other', 'getOtherProfile');
-
+    // UC purchase flow
+    Route::post('/uc/buy', [App\Http\Controllers\Api\UCController::class, 'buy'])->middleware(['auth:sanctum', \App\Http\Middleware\CheckUserBanned::class]);
 });
 
 Route::controller(CasesController::class)->prefix('/case')->group(function () {
@@ -345,5 +346,9 @@ Route::prefix('/admin')->middleware('auth:sanctum')->group(function () {
         Route::post('/create', 'create');
         Route::post('/update', 'update');
         Route::post('/delete', 'delete');
+        // UC purchase flow (admin)
+        Route::post('/admin/uc/pending', [App\Http\Controllers\Api\UCController::class, 'listPending']);
+        Route::post('/admin/uc/confirm', [App\Http\Controllers\Api\UCController::class, 'confirm']);
+        Route::post('/admin/uc/decline', [App\Http\Controllers\Api\UCController::class, 'decline']);
     });
 });

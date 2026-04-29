@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        if (Schema::hasTable('payments')) {
+            return; // table already exists from earlier migration
+        }
+        Schema::create('payments', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->enum('type', ['uc']);
+            $table->integer('amount'); // amount of UC
+            $table->bigInteger('price')->unsigned(); // price in cents
+            $table->enum('status', ['pending', 'approved', 'declined'])->default('pending');
+            $table->string('pubg_uid')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('payments');
+    }
+};
+?>
