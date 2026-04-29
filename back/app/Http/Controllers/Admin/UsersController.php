@@ -824,7 +824,7 @@ class UsersController extends Controller
 
         // Депозиты
         $deposits = Payment::where('user_id', $userId)
-            ->where('status', Payment::PAID)
+            ->where('status', Payment::STATUS_APPROVED)
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();

@@ -18,7 +18,7 @@ class IndexController extends Controller
     {
         // 1. Запрос для платежей (Payment)
         $payments = Payment::query()
-            ->where('status', Payment::PAID)
+            ->where('status', Payment::STATUS_APPROVED)
             ->selectRaw('
             SUM(CASE WHEN created_at >= ? THEN amount ELSE 0 END) as payments_today,
             SUM(CASE WHEN created_at >= ? THEN amount ELSE 0 END) as payment_week,
@@ -52,7 +52,7 @@ class IndexController extends Controller
         // Получаем суммы платежей по дням недели одним запросом
         $paymentsByDay = Payment::query()
             ->whereBetween('created_at', [$startOfWeek, $endOfWeek])
-            ->where('status', Payment::PAID) // Фильтр по статусу, если нужно
+            ->where('status', Payment::STATUS_APPROVED) // Фильтр по статусу, если нужно
             ->selectRaw('
             DAYOFWEEK(created_at) as day_of_week,
             SUM(amount) as total_amount
