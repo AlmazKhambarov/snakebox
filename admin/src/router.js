@@ -63,6 +63,12 @@ const routes = [
         meta: { requiresAuth: true }
     },
     {
+        path: "/uc-payments",
+        component: () => import("./pages/UCPayments.vue"),
+        name: "uc.payments",
+        meta: { requiresAuth: true }
+    },
+    {
         path: "/withdraws",
         component: () => import("./pages/Withdraws.vue"),
         name: "withdraws",

@@ -248,6 +248,7 @@ Route::prefix('/admin')->middleware('auth:sanctum')->group(function () {
         Route::post('/rtp/reset', 'resetRTP');
         Route::post('/enable', 'enableCase');
         Route::get('/statistics', 'statistics');
+        Route::post('/statistics/reset', 'resetAllStatistics');
     });
 
     Route::controller(PromocodesController::class)->prefix('/promocodes')->group(function () {
@@ -346,9 +347,10 @@ Route::prefix('/admin')->middleware('auth:sanctum')->group(function () {
         Route::post('/create', 'create');
         Route::post('/update', 'update');
         Route::post('/delete', 'delete');
-        // UC purchase flow (admin)
-        Route::post('/admin/uc/pending', [App\Http\Controllers\Api\UCController::class, 'listPending']);
-        Route::post('/admin/uc/confirm', [App\Http\Controllers\Api\UCController::class, 'confirm']);
-        Route::post('/admin/uc/decline', [App\Http\Controllers\Api\UCController::class, 'decline']);
     });
+
+    // UC purchase flow (admin)
+    Route::post('/uc/pending', [App\Http\Controllers\Api\UCController::class, 'listPending']);
+    Route::post('/uc/confirm', [App\Http\Controllers\Api\UCController::class, 'confirm']);
+    Route::post('/uc/decline', [App\Http\Controllers\Api\UCController::class, 'decline']);
 });

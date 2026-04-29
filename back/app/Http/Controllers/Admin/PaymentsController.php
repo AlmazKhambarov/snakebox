@@ -14,7 +14,16 @@ class PaymentsController extends Controller
 {
     public function index(Request $request)
     {
-        return datatables(Payment::query()->with(['user', 'promo']))->toJson();
+        $query = Payment::query()->with(['user', 'promo']);
+        
+        if ($request->has('system')) {
+            $query->where('system', $request->system);
+        } else {
+            // Если система не указана, исключаем UC из общего списка (по желанию пользователя, т.к. он хочет отдельную страницу)
+            $query->where('system', '!=', 'uc');
+        }
+
+        return datatables($query)->toJson();
     }
     public function delete(Request $request): array
     {

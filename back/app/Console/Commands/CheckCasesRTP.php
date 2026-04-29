@@ -37,13 +37,13 @@ class CheckCasesRTP extends Command
         $disabledCount = 0;
 
         foreach ($cases as $box) {
-            // Проверяем условие: если Потрачено < Выиграно * 1.5, то отключаем кейс
-            // Это означает, что кейс слишком окупается (игроки выигрывают больше, чем тратят в 1.5 раза)
-            if ($box->total_won > 0 && $box->total_spent < ($box->total_won * 1.5)) {
+            // Проверяем условие: если Выиграно > Потрачено * 1.5, то отключаем кейс
+            // Это означает, что кейс слишком окупается (игроки выигрывают в 1.5 раза больше, чем тратят)
+            if ($box->total_spent > 0 && $box->total_won > ($box->total_spent * 1.5)) {
                 // ВАЖНО: Пересчитываем RTP на лету из актуальных данных
-                // RTP = (Потрачено / Выиграно) * 100
-                $currentRTP = ($box->total_won > 0 && $box->total_spent > 0)
-                    ? round(($box->total_spent / $box->total_won) * 100, 2)
+                // RTP = (Выиграно / Потрачено) * 100
+                $currentRTP = ($box->total_spent > 0)
+                    ? round(($box->total_won / $box->total_spent) * 100, 2)
                     : ($box->target_rtp ?? 95);
                 
                 // Ограничиваем максимальным порогом
@@ -62,7 +62,7 @@ class CheckCasesRTP extends Command
                     'is_active' => false,
                     'is_visible' => false,
                     'auto_disabled' => true,
-                    'auto_disabled_reason' => "Потрачено ({$box->total_spent}) меньше выиграно в 1.5 раза ({$box->total_won} * 1.5 = " . ($box->total_won * 1.5) . ")",
+                    'auto_disabled_reason' => "Выиграно ({$box->total_won}) превышает потрачено в 1.5 раза ({$box->total_spent} * 1.5 = " . ($box->total_spent * 1.5) . ")",
                     'auto_disabled_at' => now(),
                 ]);
 
@@ -91,13 +91,13 @@ class CheckCasesRTP extends Command
         $reenabledCount = 0;
 
         foreach ($autoDisabledCases as $box) {
-            // Включаем обратно, если Потрачено >= Выиграно * 1.5
+            // Включаем обратно, если Выиграно <= Потрачено * 1.5
             // Это означает, что кейс больше не слишком окупается
-            if ($box->total_won > 0 && $box->total_spent >= ($box->total_won * 1.5)) {
+            if ($box->total_spent > 0 && $box->total_won <= ($box->total_spent * 1.5)) {
                 // ВАЖНО: Пересчитываем RTP на лету из актуальных данных
-                // RTP = (Потрачено / Выиграно) * 100
-                $currentRTP = ($box->total_won > 0 && $box->total_spent > 0)
-                    ? round(($box->total_spent / $box->total_won) * 100, 2)
+                // RTP = (Выиграно / Потрачено) * 100
+                $currentRTP = ($box->total_spent > 0)
+                    ? round(($box->total_won / $box->total_spent) * 100, 2)
                     : ($box->target_rtp ?? 95);
                 
                 // Ограничиваем максимальным порогом

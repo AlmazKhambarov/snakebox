@@ -15,12 +15,12 @@ class RTPService
      */
     public function calculateCurrentRTP(Boxes $box): float
     {
-        if ($box->total_won == 0 || $box->total_spent == 0) {
+        if ($box->total_spent == 0) {
             return $box->target_rtp;
         }
 
-        // RTP = (Потрачено / Выиграно) * 100
-        $rtp = ($box->total_spent / $box->total_won) * 100;
+        // RTP = (Выиграно / Потрачено) * 100
+        $rtp = ($box->total_won / $box->total_spent) * 100;
 
         // Если RTP превышает максимальный порог, ограничиваем максимальным порогом
         if ($rtp > $box->max_rtp) {
@@ -84,56 +84,41 @@ class RTPService
         $minRTP = $box->min_rtp;
         $maxRTP = $box->max_rtp;
 
-        // ЛОГИКА С ОГРАНИЧЕНИЯМИ:
-        // RTP = (Потрачено / Выиграно) * 100
+        // ЛОГИКА:
         // Высокий RTP = казино в минусе (игроки выигрывают больше) → УМЕНЬШАЕМ шансы на дорогие
         // Низкий RTP = казино в плюсе (игроки тратят больше) → УВЕЛИЧИВАЕМ шансы на дорогие
-        // НО с ограничениями:
-        // - Если RTP > max_rtp (сильно окупается) → ограничиваем минимальным порогом
-        // - Если RTP < min_rtp (сильно в минус) → ограничиваем максимальным порогом
         
         // Вычисляем отклонение от целевого RTP
         $rtpDeviation = $currentRTP - $targetRTP;
         
         // Определяем режим работы
-        $isOverMax = $currentRTP > $maxRTP; // Сильно окупается (казино в минусе)
-        $isUnderMin = $currentRTP < $minRTP; // Сильно в плюсе (казино в плюсе)
+        $isOverMax = $currentRTP > $maxRTP; // Игроки выигрывают слишком много (казино в минусе)
+        $isUnderMin = $currentRTP < $minRTP; // Игроки выигрывают слишком мало (казино в плюсе)
         $isInRange = !$isOverMax && !$isUnderMin; // В пределах нормы
 
-        // Коэффициент коррекции с учетом ограничений
-        // ИНВЕРТИРОВАННАЯ ЛОГИКА: чем выше RTP → меньше дорогих (казино в минусе)
+        // Коэффициент коррекции
+        // Если RTP высокий (deviation > 0) -> correctionFactor отрицательный -> уменьшаем шансы
+        // Если RTP низкий (deviation < 0) -> correctionFactor положительный -> увеличиваем шансы
         if ($isOverMax) {
-            // Кейс сильно окупается (RTP > max_rtp, казино в минусе) → ограничиваем минимальным порогом снизу
-            // Уменьшаем шансы на дорогие (correctionFactor отрицательный), но не меньше минимального порога
-            $currentDeviation = $currentRTP - $maxRTP; // Насколько превысили максимум
-            // Ограничиваем снизу: даже при высоком RTP не даем слишком мало дорогих (минимальный порог)
-            $correctionFactor = max(-0.6, min(-0.2, -$currentDeviation / 15)); // Минимум -0.6, максимум -0.2
+            // Слишком окупается (RTP > max_rtp) → ограничиваем уменьшение шансов
+            $currentDeviation = $currentRTP - $maxRTP;
+            $correctionFactor = max(-0.7, min(-0.3, -$currentDeviation / 15)); 
         } elseif ($isUnderMin) {
-            // Кейс сильно в плюсе (RTP < min_rtp, казино в плюсе) → ограничиваем максимальным порогом сверху
-            // Увеличиваем шансы на дорогие (correctionFactor положительный), но не больше максимального порога
-            $currentDeviation = $minRTP - $currentRTP; // Насколько ниже минимума
-            // Ограничиваем сверху: даже при низком RTP не даем слишком много дорогих (максимальный порог)
-            $correctionFactor = max(0.2, min(0.6, $currentDeviation / 15)); // Минимум +0.2, максимум +0.6
+            // Слишком в минусе (RTP < min_rtp) → ограничиваем увеличение шансов
+            $currentDeviation = $minRTP - $currentRTP;
+            $correctionFactor = max(0.3, min(0.7, $currentDeviation / 15));
         } else {
-            // В пределах нормы (min_rtp <= RTP <= max_rtp) → плавная динамическая коррекция
-            // Чем выше RTP → меньше дорогих, чем ниже → больше дорогих (ИНВЕРТИРОВАНО)
-            $correctionFactor = -$rtpDeviation / 20; // ИНВЕРСИЯ: минус перед deviation
-            $correctionFactor = max(-0.5, min(0.5, $correctionFactor)); // Ограничиваем ±0.5 для плавности
+            // В пределах нормы
+            $correctionFactor = -$rtpDeviation / 25; 
+            $correctionFactor = max(-0.5, min(0.5, $correctionFactor));
         }
         
-        Log::info('RTP correction calculation with limits', [
+        Log::info('RTP correction calculation', [
             'box_id' => $box->id,
-            'box_name' => $box->name,
             'current_rtp' => $currentRTP,
             'target_rtp' => $targetRTP,
-            'min_rtp' => $minRTP,
-            'max_rtp' => $maxRTP,
-            'rtp_deviation' => $rtpDeviation,
-            'is_over_max' => $isOverMax,
-            'is_under_min' => $isUnderMin,
-            'is_in_range' => $isInRange,
             'correction_factor' => $correctionFactor,
-            'mode' => $isOverMax ? 'LIMIT_MIN' : ($isUnderMin ? 'LIMIT_MAX' : 'DYNAMIC'),
+            'mode' => $isOverMax ? 'OVER_MAX' : ($isUnderMin ? 'UNDER_MIN' : 'DYNAMIC'),
         ]);
 
         $adjustedItems = [];
@@ -349,12 +334,12 @@ class RTPService
      */
     public function calculateUpgradeRTP(UpgradeRtpStats $stats): float
     {
-        if ($stats->total_won == 0 || $stats->total_spent == 0) {
+        if ($stats->total_spent == 0) {
             return $stats->target_rtp;
         }
 
-        // RTP = (Потрачено / Выиграно) * 100
-        $rtp = ($stats->total_spent / $stats->total_won) * 100;
+        // RTP = (Выиграно / Потрачено) * 100
+        $rtp = ($stats->total_won / $stats->total_spent) * 100;
 
         // Если RTP превышает максимальный порог, ограничиваем максимальным порогом
         if ($rtp > $stats->max_rtp) {
@@ -413,6 +398,7 @@ class RTPService
         $targetRTP = $stats->target_rtp;
         
         // Применяем RTP коррекцию
+        // Если RTP > target (игроки выигрывают много) -> уменьшаем шансы
         $rtpDifference = $targetRTP - $currentRTP;
         $rtpModifier = 1 + ($rtpDifference / 100);
         $rtpModifier = max(0.8, min(1.2, $rtpModifier)); // Ограничиваем ±20%

@@ -233,6 +233,20 @@
                                 </span>
                                 <span class="menu-title">Пополнения</span>
                             </router-link>
+                            <router-link
+                                :class="{ active: route.name === 'uc.payments' }"
+                                class="menu-link"
+                                :to="{ name: 'uc.payments' }"
+                            >
+                                <span class="menu-icon">
+                                    <i class="ki-duotone ki-delivery-3 fs-2">
+                                        <span class="path1"></span>
+                                        <span class="path2"></span>
+                                        <span class="path3"></span>
+                                    </i>
+                                </span>
+                                <span class="menu-title">Выводы UC</span>
+                            </router-link>
 
                             <router-link
                                 :class="{ active: route.name === 'methods' }"

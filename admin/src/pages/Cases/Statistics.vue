@@ -12,6 +12,17 @@
                 </i>
                 Обновить
             </button>
+            <button
+                type="button"
+                class="btn btn-sm fw-bold btn-danger ms-2"
+                @click="resetStatistics"
+            >
+                <i class="ki-duotone ki-trash fs-2">
+                    <span class="path1"></span>
+                    <span class="path2"></span>
+                </i>
+                Сбросить
+            </button>
         </Toolbar>
 
         <div id="kt_app_content" class="app-content flex-column-fluid">
@@ -873,10 +884,43 @@ export default {
             loadStatistics();
         });
 
+        const resetStatistics = async () => {
+            if (!confirm("Вы уверены, что хотите сбросить всю статистику кейсов? Это действие необратимо.")) {
+                return;
+            }
+            
+            loading.value = true;
+            try {
+                const response = await fetch(
+                    `${import.meta.env.VITE_API_URL}/api/admin/cases/statistics/reset`,
+                    {
+                        method: "POST",
+                        headers: {
+                            Authorization: "Bearer " + Cookies.get("token"),
+                        },
+                    }
+                );
+
+                const data = await response.json();
+
+                if (data.success) {
+                    toast.success(data.message || "Статистика сброшена");
+                    loadStatistics();
+                } else {
+                    toast.error(data.message || "Ошибка сброса статистики");
+                }
+            } catch (error) {
+                toast.error("Ошибка сброса статистики");
+            } finally {
+                loading.value = false;
+            }
+        };
+
         return {
             statistics,
             loading,
             loadStatistics,
+            resetStatistics,
             getImageUrl,
         };
     },

@@ -126,12 +126,20 @@ export default {
                     {
                         data: "amount",
                         render: (data, type, row) => {
-                            return row.amount / 100 + " ₽";
+                            if (row.system === 'uc') {
+                                return row.amount + ' UC';
+                            }
+                            return row.amount / 100 + " UZS";
                         },
                     },
                     {
                         data: "status",
                         render: (data, type, row) => {
+                            if (row.system === 'uc') {
+                                if (row.status === 0) return '<div class="badge badge-warning">Ожидает</div>';
+                                if (row.status === 1) return '<div class="badge badge-success">Подтверждён</div>';
+                                if (row.status === 2) return '<div class="badge badge-danger">Отклонён</div>';
+                            }
                             return row.status === 0
                                 ? '<div class="badge badge-warning">Ожидает оплату</div>'
                                 : '<div class="badge badge-success">Оплачен</div>';
@@ -143,6 +151,9 @@ export default {
                     {
                         data: "metadata",
                         render: (data, type, row) => {
+                            if (row.system === 'uc' && row.pubg_uid) {
+                                return `<div><strong>PUBG UID:</strong> ${row.pubg_uid}</div>`;
+                            }
                             if (row.metadata) {
                                 const info = [];
                                 if (row.metadata.user_id) {
@@ -163,7 +174,23 @@ export default {
                         orderable: false,
                         className: "actions",
                         render: (data, type, row) => {
-                            return `
+                            let actions = '';
+                            if (row.system === 'uc' && row.status === 0) {
+                                actions += `
+                <a href="#" class="btn btn-icon text-hover-success" data-action="confirm-uc" data-id="${row.id}" title="Подтвердить UC">
+                  <i class="ki-duotone ki-check-circle fs-1">
+                    <span class="path1"></span>
+                    <span class="path2"></span>
+                  </i>
+                </a>
+                <a href="#" class="btn btn-icon text-hover-warning" data-action="decline-uc" data-id="${row.id}" title="Отклонить UC">
+                  <i class="ki-duotone ki-cross-circle fs-1">
+                    <span class="path1"></span>
+                    <span class="path2"></span>
+                  </i>
+                </a>`;
+                            }
+                            actions += `
                 <a href="#" class="btn btn-icon text-hover-danger" data-action="delete" data-id="${row.id}" title="Удалить">
                   <i class="ki-duotone ki-trash-square fs-1">
                     <span class="path1"></span>
@@ -171,8 +198,8 @@ export default {
                     <span class="path3"></span>
                     <span class="path4"></span>
                   </i>
-                </a>
-              `;
+                </a>`;
+                            return actions;
                         },
                     },
                 ],
@@ -194,6 +221,26 @@ export default {
                     }
                 );
 
+                this.datatable.on(
+                    "click",
+                    'td.actions a[data-action="confirm-uc"]',
+                    (e) => {
+                        e.preventDefault();
+                        const id = e.currentTarget.dataset.id;
+                        this.confirmUC(id);
+                    }
+                );
+
+                this.datatable.on(
+                    "click",
+                    'td.actions a[data-action="decline-uc"]',
+                    (e) => {
+                        e.preventDefault();
+                        const id = e.currentTarget.dataset.id;
+                        this.declineUC(id);
+                    }
+                );
+
                 this.handlersAttached = true;
             }
         },
@@ -212,11 +259,8 @@ export default {
                 const { data } = await request(
                     "POST",
                     "/api/admin/payments/delete",
-                    {
-                        id: id,
-                    }
+                    { id }
                 );
-
                 if (data.success) {
                     this.loadData();
                     toast.success(data.message);
@@ -224,8 +268,43 @@ export default {
                     toast.error(data.message);
                 }
             } catch (error) {
-                console.error("Error deleting payment:", error);
                 toast.error("Ошибка при удалении платежа");
+            }
+        },
+
+        async confirmUC(id) {
+            try {
+                const { data } = await request(
+                    "POST",
+                    "/api/admin/uc/confirm",
+                    { id }
+                );
+                if (data.success) {
+                    this.loadData();
+                    toast.success(data.message);
+                } else {
+                    toast.error(data.message);
+                }
+            } catch (error) {
+                toast.error("Ошибка при подтверждении UC");
+            }
+        },
+
+        async declineUC(id) {
+            try {
+                const { data } = await request(
+                    "POST",
+                    "/api/admin/uc/decline",
+                    { id }
+                );
+                if (data.success) {
+                    this.loadData();
+                    toast.success(data.message);
+                } else {
+                    toast.error(data.message);
+                }
+            } catch (error) {
+                toast.error("Ошибка при отклонении UC");
             }
         },
     },

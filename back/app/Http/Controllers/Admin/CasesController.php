@@ -513,6 +513,24 @@ class CasesController extends Controller
   }
 
   /**
+   * Сбросить статистику RTP для ВСЕХ кейсов
+   */
+  public function resetAllStatistics(Request $request): array
+  {
+    \App\Models\Boxes::query()->update([
+      'current_rtp' => \DB::raw('target_rtp'),
+      'total_opened' => 0,
+      'total_spent' => 0,
+      'total_won' => 0,
+      'last_rtp_update' => now(),
+    ]);
+
+    Log::channel('admin_cases')->info('All boxes RTP statistics reset');
+
+    return ['success' => true, 'message' => 'Вся статистика кейсов успешно сброшена'];
+  }
+
+  /**
    * Включить автоотключенный кейс вручную
    */
   public function enableCase(Request $request): array
@@ -554,8 +572,8 @@ class CasesController extends Controller
     $totalSpent = Boxes::sum('total_spent');
     $totalWon = Boxes::sum('total_won');
     $totalProfit = $totalSpent - $totalWon;
-    // RTP = (Потрачено / Выиграно) * 100
-    $overallRTP = ($totalWon > 0 && $totalSpent > 0) ? round(($totalSpent / $totalWon) * 100, 2) : 0;
+    // Общий RTP по всем кейсам
+    $overallRtp = ($totalSpent > 0) ? round(($totalWon / $totalSpent) * 100, 2) : 0;
     
     // Статистика по RTP (пересчитываем на лету)
     $casesWithStats = Boxes::where('total_opened', '>', 0)->get();
@@ -894,7 +912,7 @@ class CasesController extends Controller
         'total_spent' => $totalSpent,
         'total_won' => $totalWon,
         'total_profit' => $totalProfit,
-        'overall_rtp' => round($overallRTP, 2),
+        'overall_rtp' => round($overallRtp, 2),
         
         // Статистика по RTP
         'avg_rtp' => round($avgRTP ?? 0, 2),
@@ -954,8 +972,8 @@ class CasesController extends Controller
     
     $totalWon = $lives->sum('price');
     $profit = $totalSpent - $totalWon;
-    // RTP = (Потрачено / Выиграно) * 100
-    $rtp = ($totalWon > 0 && $totalSpent > 0) ? round(($totalSpent / $totalWon) * 100, 2) : 0;
+    // RTP = (Выиграно / Потрачено) * 100
+    $rtp = ($totalSpent > 0) ? round(($totalWon / $totalSpent) * 100, 2) : 0;
     
     // Статистика по кейсам за период
     $casesStats = $lives->groupBy('box_id')
@@ -996,10 +1014,12 @@ class CasesController extends Controller
    */
   private function calculateRTP(Boxes $box): float
   {
-    // RTP = (Потрачено / Выиграно) * 100
-    $rtp = ($box->total_won > 0 && $box->total_spent > 0)
-      ? round(($box->total_spent / $box->total_won) * 100, 2)
-      : ($box->target_rtp ?? 95);
+    if ($box->total_spent == 0) {
+      return $box->target_rtp ?? 95;
+    }
+
+    // RTP = (Выиграно / Потрачено) * 100
+    $rtp = round(($box->total_won / $box->total_spent) * 100, 2);
     
     // Ограничиваем максимальным порогом
     if ($rtp > $box->max_rtp) {
