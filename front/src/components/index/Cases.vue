@@ -11,7 +11,7 @@
           >
             <div
               class="icon"
-              style="mask-image: url('images/icons/cs2.svg')"
+              style="mask-image: url('/images/icons/cs2.svg')"
             ></div>
           </button>
           <button
@@ -20,17 +20,13 @@
             :class="{ active: selectedGame === 'pubg' }"
             @click="selectGame('pubg')"
           >
-            <div
-              class="icon"
-              style="mask-image: url('images/icons/pubg.svg')"
-            ></div>
-            <span style="font-size: 11px; font-weight: 600;">PUBG</span>
+            <img src="/images/icons/pubglogo.png" style="width: 18px; height: 18px; object-fit: contain;" />
           </button>
         </div>
         <button @click="resetFilters" type="button" class="btn-gray clearAll">
           <div
             class="icon"
-            style="mask-image: url('images/icons/clear.svg')"
+            style="mask-image: url('/images/icons/clear.svg')"
           ></div>
           Сбросить всё
         </button>
@@ -181,8 +177,7 @@
             <div class="uc-section">
               <div class="uc-section__label">O'YINNI TANLASH</div>
               <div class="uc-game-select">
-                <img src="/images/icons/pubg.svg" alt="PUBG" class="uc-game-select__icon" />
-                <span class="uc-game-select__name">PUBG MOBILE</span>
+                <img src="/images/icons/pubglogo.png" alt="PUBG" class="uc-game-select__icon" />
                 <span class="uc-game-select__arrow">▼</span>
               </div>
             </div>

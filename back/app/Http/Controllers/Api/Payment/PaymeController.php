@@ -89,7 +89,7 @@ class PaymeController extends Controller
             'system'         => 'payme',
             'method'         => $method,
             'amount'         => $amount,
-            'status'         => Payment::PENDING,
+            'status'         => Payment::STATUS_PENDING,
             'transaction_id' => $transaction_id,
             'metadata'       => [
                 'user_id'  => $user->id,
@@ -199,7 +199,7 @@ class PaymeController extends Controller
             return $this->errorResponse(self::ERROR_ORDER_NOT_FOUND, 'Order not found', $id);
         }
 
-        if ($payment->status === Payment::PAID) {
+        if ($payment->status === Payment::STATUS_APPROVED) {
             return $this->errorResponse(self::ERROR_CANT_PERFORM, 'Order already paid', $id);
         }
 
@@ -269,7 +269,7 @@ class PaymeController extends Controller
             $timeout = 43200000; // 12 hours in milliseconds
             $isExpired = ($time - $oldCreateTime) > $timeout;
 
-            if ($payment->status === Payment::PENDING && $isExpired) {
+            if ($payment->status === Payment::STATUS_PENDING && $isExpired) {
                 // Old transaction expired — cancel it, create new one
                 $metadata = $payment->metadata ?? [];
                 $metadata['payme_id'] = $paymeId;
@@ -293,7 +293,7 @@ class PaymeController extends Controller
             return $this->errorResponse(self::ERROR_ORDER_NOT_FOUND, 'Order is busy with another transaction', $id);
         }
 
-        if ($payment->status === Payment::PAID) {
+        if ($payment->status === Payment::STATUS_APPROVED) {
             return $this->errorResponse(self::ERROR_CANT_PERFORM, 'Order already paid', $id);
         }
 
@@ -327,7 +327,7 @@ class PaymeController extends Controller
             return $this->errorResponse(self::ERROR_TRANSACTION_NOT_FOUND, 'Transaction not found', $id);
         }
 
-        if ($payment->status === Payment::PAID) {
+        if ($payment->status === Payment::STATUS_APPROVED) {
             return response()->json([
                 'id'     => $id,
                 'result' => [
@@ -339,7 +339,7 @@ class PaymeController extends Controller
             ]);
         }
 
-        if ($payment->status !== Payment::PENDING) {
+        if ($payment->status !== Payment::STATUS_PENDING) {
             return $this->errorResponse(self::ERROR_CANT_PERFORM, 'Cannot perform transaction', $id);
         }
 
@@ -379,13 +379,13 @@ class PaymeController extends Controller
         $metadata = $payment->metadata ?? [];
         $metadata['payme_perform_time'] = $performTime;
         $payment->metadata = $metadata;
-        $payment->status = Payment::PAID;
+        $payment->status = Payment::STATUS_APPROVED;
         $payment->save();
 
         // Referral logic
         $hasOtherDeposits = Payment::query()
             ->where('user_id', $user->id)
-            ->where('status', Payment::PAID)
+            ->where('status', Payment::STATUS_APPROVED)
             ->where('id', '!=', $payment->id)
             ->exists();
 
@@ -484,7 +484,7 @@ class PaymeController extends Controller
         }
 
         // Determine state based on whether transaction was performed
-        $wasPerformed = ($payment->status === Payment::PAID) || isset($payment->metadata['payme_perform_time']);
+        $wasPerformed = ($payment->status === Payment::STATUS_APPROVED) || isset($payment->metadata['payme_perform_time']);
         $cancelTime = now()->timestamp * 1000;
         $metadata = $payment->metadata ?? [];
         $metadata['payme_cancel_time'] = $cancelTime;
@@ -570,8 +570,8 @@ class PaymeController extends Controller
     private function getPaymeState(Payment $payment): int
     {
         return match ($payment->status) {
-            Payment::PENDING   => self::STATE_CREATED,
-            Payment::PAID      => self::STATE_COMPLETED,
+            Payment::STATUS_PENDING   => self::STATE_CREATED,
+            Payment::STATUS_APPROVED  => self::STATE_COMPLETED,
             Payment::CANCELLED => isset($payment->metadata['payme_perform_time'])
                                     ? self::STATE_CANCELLED_AFTER
                                     : self::STATE_CANCELLED,

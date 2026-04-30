@@ -120,7 +120,7 @@
                                                 ? selectedMethod.min_amount.toFixed(2)
                                                 : "1.00"
                                         }}
-                                        {{ ['nirvana_uzs', 'payme'].includes(selectedMethod?.system) ? 'UZS' : 'RUB' }}
+                                        {{ ['nirvana_uzs', 'payme'].includes(selectedMethod?.system) ? 'UZS' : (selectedMethod?.system === 'cryptocloud' ? '$' : 'RUB') }}
                                     </span>
                                 </div>
                             </div>
@@ -129,9 +129,9 @@
                                     <div class="form-input__icon">
                                         <div
                                             class="icon"
-                                            style="
-                                                mask-image: url('/images/icons/uzs.svg');
-                                            "
+                                            :style="{
+                                                'mask-image': `url('/images/icons/${selectedMethod?.system === 'cryptocloud' ? 'usd' : 'uzs'}.svg')`
+                                            }"
                                         ></div>
                                     </div>
                                     <input

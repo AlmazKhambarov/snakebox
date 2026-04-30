@@ -315,7 +315,7 @@ export default {
             data: "game",
             render: function (data) {
               if (data === 'pubg') {
-                return '<div class="d-flex align-items-center"><img src="/images/icons/pubg.svg" width="20" height="20" class="me-2" style="filter: brightness(0); opacity: 0.7;"><span class="badge badge-warning">PUBG</span></div>';
+                return '<div class="d-flex align-items-center"><img src="/images/icons/pubglogo.png" width="20" height="20" style="object-fit: contain;"></div>';
               }
               return '<div class="d-flex align-items-center"><img src="/images/icons/cs2.svg" width="20" height="20" class="me-2" style="filter: brightness(0); opacity: 0.7;"><span class="badge badge-info">CS</span></div>';
             },

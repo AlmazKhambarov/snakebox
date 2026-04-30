@@ -151,7 +151,7 @@ class TBankController extends Controller
       'system' => 'tbank',
       'method' => $method,
       'amount' => $amount,
-      'status' => Payment::PENDING,
+      'status' => Payment::STATUS_PENDING,
       'transaction_id' => $orderID,
       'metadata' => [
         'user_id' => $user->id,
@@ -192,7 +192,7 @@ class TBankController extends Controller
 
     $payment = Payment::query()->where('transaction_id', $body['data']['externalID'])->first();
     if (!$payment) die('Payment not found');
-    if ($payment->status == Payment::PAID) die('payment is out of date');
+    if ($payment->status == Payment::STATUS_APPROVED) die('payment is out of date');
 
     $user = User::query()->find($payment->user_id);
     if (!$user) return 'User not found';
@@ -220,12 +220,12 @@ class TBankController extends Controller
     $user->increment('event_points', $event_points);
     $user->increment('total_deposited', $payment->amount * 100);
 
-    $payment->status = Payment::PAID;
+    $payment->status = Payment::STATUS_APPROVED;
     $payment->save();
 
     $hasOtherDeposits = Payment::query()
       ->where('user_id', $user->id)
-      ->where('status', Payment::PAID)
+      ->where('status', Payment::STATUS_APPROVED)
       ->where('id', '!=', $payment->id)
       ->exists();
 

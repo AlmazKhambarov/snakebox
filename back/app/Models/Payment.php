@@ -24,6 +24,7 @@ class Payment extends Model
         'amount' => 'integer',
         'status' => 'integer',
         'type' => 'string',
+        'metadata' => 'array',
     ];
 
     public function user(): BelongsTo

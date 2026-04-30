@@ -1,1 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/><text x="12" y="16" text-anchor="middle" font-size="7" font-weight="bold" font-family="Arial" fill="currentColor">P</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="80" fill="#F7A800"/>
+  <g fill="#1A1A1A">
+    <path d="M96 140h72c35.3 0 64 28.7 64 64v0c0 35.3-28.7 64-64 64h-32v52h-40V140zm40 92h28c15.5 0 28-12.5 28-28s-12.5-28-28-28h-28v56z"/>
+    <path d="M248 140h40v128h60v-128h40v180h-140V140zm40 140h60v-0h-60v0z"/>
+    <path d="M248 280h140v40H248v-40z"/>
+    <path d="M136 340h40v32h-40z"/>
+    <path d="M192 340h40v32h-40z"/>
+    <text x="170" y="420" font-family="Arial,Helvetica,sans-serif" font-weight="900" font-size="100" fill="#1A1A1A" text-anchor="middle">PUBG</text>
+  </g>
+</svg>

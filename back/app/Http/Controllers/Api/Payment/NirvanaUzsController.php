@@ -71,7 +71,7 @@ class NirvanaUzsController extends Controller
             'system'         => 'nirvana_uzs',
             'method'         => $method,
             'amount'         => $amount,
-            'status'         => Payment::PENDING,
+            'status'         => Payment::STATUS_PENDING,
             'transaction_id' => $transaction_id,
             'metadata'       => [
                 'user_id'  => $user->id,
@@ -162,7 +162,7 @@ class NirvanaUzsController extends Controller
 
             $payment = Payment::query()->where('transaction_id', $clientID)->first();
             if (!$payment) return response('Payment not found', 200);
-            if ($payment->status == Payment::PAID) return response('Already paid', 200);
+            if ($payment->status == Payment::STATUS_APPROVED) return response('Already paid', 200);
 
             $user = User::query()->find($payment->user_id);
             if (!$user) return response('User not found', 200);
@@ -195,12 +195,12 @@ class NirvanaUzsController extends Controller
             $user->increment('event_points', $event_points);
             $user->increment('total_deposited', $amountInRubCents);
 
-            $payment->status = Payment::PAID;
+            $payment->status = Payment::STATUS_APPROVED;
             $payment->save();
 
             $hasOtherDeposits = Payment::query()
                 ->where('user_id', $user->id)
-                ->where('status', Payment::PAID)
+                ->where('status', Payment::STATUS_APPROVED)
                 ->where('id', '!=', $payment->id)
                 ->exists();
 
