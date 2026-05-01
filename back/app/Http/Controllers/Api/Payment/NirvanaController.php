@@ -97,8 +97,8 @@ class NirvanaController extends Controller
             $client   = new Client();
             $response = $client->post('https://api.nirvanapay.pro/create/in', [
                 'headers' => [
-                    'ApiPublic'  => env('NIRVANA_API_PUBLIC'),
-                    'ApiPrivate' => env('NIRVANA_API_PRIVATE'),
+                    'ApiPublic'  => trim(config('services.nirvana.public')),
+                    'ApiPrivate' => trim(config('services.nirvana.private')),
                 ],
                 'json' => $options,
             ]);
@@ -130,7 +130,7 @@ class NirvanaController extends Controller
         } catch (\GuzzleHttp\Exception\ClientException $e) {
             $responseBody = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : 'no response';
             Log::channel('payment_nirvana')->error('Nirvana RUB client error: ' . $e->getMessage() . ' | Body: ' . $responseBody);
-            return ['success' => false, 'message' => 'Ошибка Nirvana: ' . $responseBody];
+            return ['success' => false, 'message' => 'Ошибка nifif: ' . $responseBody];
         } catch (\Exception $e) {
             Log::channel('payment_nirvana')->error('Nirvana RUB exception: ' . $e->getMessage());
             return ['success' => false, 'message' => 'Ошибка: ' . $e->getMessage()];
@@ -145,8 +145,8 @@ class NirvanaController extends Controller
             $client   = new Client();
             $response = $client->post('https://api.nirvanapay.pro/transaction/status', [
                 'headers' => [
-                    'ApiPublic'  => env('NIRVANA_API_PUBLIC'),
-                    'ApiPrivate' => env('NIRVANA_API_PRIVATE'),
+                    'ApiPublic'  => trim(config('services.nirvana.public')),
+                    'ApiPrivate' => trim(config('services.nirvana.private')),
                 ],
                 'json' => ['clientID' => $clientID],
             ]);

@@ -69,4 +69,9 @@ return [
         'provider' => \League\OAuth1\Client\Server\Twitter::class,
     ],
 
+    'nirvana' => [
+        'public' => env('NIRVANA_API_PUBLIC'),
+        'private' => env('NIRVANA_API_PRIVATE'),
+    ],
+
 ];

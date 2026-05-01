@@ -12,10 +12,16 @@ class Payment extends Model
     // Types
     const TYPE_UC = 'uc';
 
-    // Statuses (int column in DB)
-    const STATUS_PENDING = 0;
-    const STATUS_APPROVED = 1;
-    const STATUS_DECLINED = 2;
+    // Statuses (int column in DB) — original names
+    public const PENDING = 0;
+    public const PAID = 1;
+    public const CANCELLED = 2;
+    public const FAILED = 3;
+
+    // Aliases for new code
+    const STATUS_PENDING = self::PENDING;
+    const STATUS_APPROVED = self::PAID;
+    const STATUS_DECLINED = self::CANCELLED;
 
     protected $guarded = [];
 
