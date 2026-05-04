@@ -88,7 +88,7 @@ class PaymeController extends Controller
             'promocode_id'   => $promocode ? $promocode->id : null,
             'system'         => 'payme',
             'method'         => $method,
-            'amount'         => $amount,
+            'amount'         => $amount * 100,
             'status'         => Payment::STATUS_PENDING,
             'transaction_id' => $transaction_id,
             'metadata'       => [
@@ -219,7 +219,7 @@ class PaymeController extends Controller
         }
 
         // Amount is in tiyin, our amount is in sum
-        if ($payment->amount * 100 != $amount) {
+        if ($payment->amount != $amount) {
             return $this->errorResponse(self::ERROR_INVALID_AMOUNT, 'Invalid amount', $id);
         }
 
@@ -243,7 +243,7 @@ class PaymeController extends Controller
             return $this->errorResponse(self::ERROR_ORDER_NOT_FOUND, 'Order not found', $id);
         }
 
-        if ($payment->amount * 100 != $amount) {
+        if ($payment->amount != $amount) {
             return $this->errorResponse(self::ERROR_INVALID_AMOUNT, 'Invalid amount', $id);
         }
 
@@ -351,7 +351,7 @@ class PaymeController extends Controller
 
         // Conversion rate: 5000 UZS = 32 RUB (1 RUB = 156.25 UZS)
         $conversionRate = 156.25;
-        $amountInRubCents = ($payment->amount * 100) / $conversionRate;
+        $amountInRubCents = $payment->amount / $conversionRate;
         
         $amount = $amountInRubCents;
 
@@ -370,7 +370,7 @@ class PaymeController extends Controller
             }
         }
 
-        $event_points = ($payment->amount / $conversionRate) * 0.1;
+        $event_points = ($payment->amount / 100 / $conversionRate) * 0.1;
         $user->increment('balance', $amount);
         $user->increment('event_points', $event_points);
         $user->increment('total_deposited', $amountInRubCents);
@@ -396,7 +396,7 @@ class PaymeController extends Controller
                     1 => 0.5, 2 => 1, 3 => 1.5, 4 => 2, 5 => 2.5, default => 0,
                 };
 
-                if (!$hasOtherDeposits && ($payment->amount / $conversionRate) >= 1000) {
+                if (!$hasOtherDeposits && ($payment->amount / 100 / $conversionRate) >= 1000) {
                     $fixedBonus   = 2500;
                     $percentBonus = $amountInRubCents * ($value / 100);
                     $totalBonus   = $fixedBonus + $percentBonus;

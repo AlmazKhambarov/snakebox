@@ -129,7 +129,10 @@ export default {
                             if (row.system === 'uc') {
                                 return row.amount + ' UC';
                             }
-                            return row.amount / 100 + " UZS";
+                            const amount = (row.amount / 100).toFixed(2);
+                            if (['nirvana_uzs', 'payme'].includes(row.system)) return amount + " UZS";
+                            if (row.system === 'cryptocloud') return "$" + amount;
+                            return amount + " ₽";
                         },
                     },
                     {

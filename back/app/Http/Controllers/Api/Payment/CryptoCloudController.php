@@ -39,7 +39,7 @@ class CryptoCloudController extends Controller
     $system = $request->system;
     $transaction_id = time() . uniqid();
     $shop_id = 'XAPGlSu1AaNOyeJB';
-    $currency = 'RUB';
+    $currency = 'USD';
     $apiKey = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1dWlkIjoiT1RBM01qZz0iLCJ0eXBlIjoicHJvamVjdCIsInYiOiI2NTg2NTc0NGVkYmEzN2RlMTg2ZGEwMjYxMjJjYTNkYmUyZDNkNmMzMTc2NTRkOGFmOTk2MGJiOGUxNTRhZGQ3IiwiZXhwIjo4ODE3MjAwOTQ4NH0.UsRUqZ3cdcCOhq-9hKIXBrXi0tflS1384I552S9s5u8';
 
 
@@ -51,11 +51,11 @@ class CryptoCloudController extends Controller
     $limits = $this->getDepositLimits($method, $system);
 
     if ($amount < $limits['min_amount']) {
-      return ['success' => false, 'message' => "Минимальная сумма депозита: " . ($limits['min_amount']) . " ₽."];
+      return ['success' => false, 'message' => "Минимальная сумма депозита: " . ($limits['min_amount']) . " $."];
     }
 
     if ($amount > $limits['max_amount']) {
-      return ['success' => false, 'message' => "Максимальная сумма депозита: " . ($limits['max_amount']) . " ₽."];
+      return ['success' => false, 'message' => "Максимальная сумма депозита: " . ($limits['max_amount']) . " $."];
     }
 
     $log = null;
@@ -84,7 +84,7 @@ class CryptoCloudController extends Controller
       'promocode_id' => $promocode ? $promocode->id : null,
       'system' => 'cryptocloud',
       'method' => $method,
-      'amount' => $amount,
+      'amount' => $amount * 100,
       'status' => Payment::STATUS_PENDING,
       'transaction_id' => $transaction_id,
       'metadata' => [
@@ -143,7 +143,7 @@ class CryptoCloudController extends Controller
     if (!$user) return 'User not found';
 
     // Convert USD to RUB balance: $1 = 76.89 RUB, then × 100 for internal cents
-    $amountInRub = $payment->amount * self::USD_TO_RUB_RATE;
+    $amountInRub = ($payment->amount / 100) * self::USD_TO_RUB_RATE;
     $amount = round($amountInRub * 100);
 
     // === Промокод ===
@@ -274,8 +274,8 @@ class CryptoCloudController extends Controller
     }
 
     return [
-      'min_amount' => 100000, // 10 руб
-      'max_amount' => 10000000 // 10 000 руб
+      'min_amount' => 1,
+      'max_amount' => 10000
     ];
   }
 }

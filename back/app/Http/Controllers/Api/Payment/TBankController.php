@@ -150,7 +150,7 @@ class TBankController extends Controller
       'promocode_id' => $promocode ? $promocode->id : null,
       'system' => 'tbank',
       'method' => $method,
-      'amount' => $amount,
+      'amount' => $amount * 100,
       'status' => Payment::STATUS_PENDING,
       'transaction_id' => $orderID,
       'metadata' => [
@@ -197,7 +197,7 @@ class TBankController extends Controller
     $user = User::query()->find($payment->user_id);
     if (!$user) return 'User not found';
 
-    $amount = $payment->amount * 100;
+    $amount = $payment->amount;
 
     // === Промокод ===
     if ($payment->promocode_id) {
@@ -215,10 +215,10 @@ class TBankController extends Controller
       }
     }
 
-    $event_points = $payment->amount * 0.1;
+    $event_points = ($payment->amount / 100) * 0.1;
     $user->increment('balance', $amount);
     $user->increment('event_points', $event_points);
-    $user->increment('total_deposited', $payment->amount * 100);
+    $user->increment('total_deposited', $payment->amount);
 
     $payment->status = Payment::STATUS_APPROVED;
     $payment->save();
@@ -250,9 +250,9 @@ class TBankController extends Controller
         }
 
         // === ПЕРВЫЙ ДЕПОЗИТ ===
-        if (!$hasOtherDeposits && $payment->amount >= 1000) {
+        if (!$hasOtherDeposits && ($payment->amount / 100) >= 1000) {
           $fixedBonus = 2500; // 25 рублей
-          $percentBonus = ($payment->amount * 100) * ($value / 100);
+          $percentBonus = $payment->amount * ($value / 100);
           $totalBonus = $fixedBonus + $percentBonus;
 
           $referrer->update([
@@ -267,7 +267,7 @@ class TBankController extends Controller
             'user_id' => $referrer->id,
             'referral_id' => $user->id,
             'amount' => $totalBonus,
-            'deposit_amount' => $payment->amount * 100,
+            'deposit_amount' => $payment->amount,
             'percentage' => $value,
             'type' => 'nirvana',
             'description' => 'Бонус 25₽ и ' . $value . '% за первый депозит',
@@ -280,7 +280,7 @@ class TBankController extends Controller
 
         // === СЛЕДУЮЩИЕ ДЕПОЗИТЫ ===
         else {
-          $percentBonus = ($payment->amount * 100) * ($value / 100);
+          $percentBonus = $payment->amount * ($value / 100);
 
           $referrer->update([
             'balance' => $referrer->balance + $percentBonus,
@@ -293,7 +293,7 @@ class TBankController extends Controller
             'user_id' => $referrer->id,
             'referral_id' => $user->id,
             'amount' => $percentBonus,
-            'deposit_amount' => $payment->amount * 100,
+            'deposit_amount' => $payment->amount,
             'percentage' => $value,
             'type' => 'nirvana',
             'description' => $value . '% от депозита',
@@ -327,8 +327,8 @@ class TBankController extends Controller
     }
 
     return [
-      'min_amount' => 100000, // 10 руб
-      'max_amount' => 10000000 // 10 000 руб
+      'min_amount' => 100,
+      'max_amount' => 100000
     ];
   }
 }

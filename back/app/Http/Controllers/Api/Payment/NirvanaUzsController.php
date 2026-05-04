@@ -74,7 +74,7 @@ class NirvanaUzsController extends Controller
             'promocode_id'   => $promocode ? $promocode->id : null,
             'system'         => 'nirvana_uzs',
             'method'         => $method,
-            'amount'         => $amount,
+            'amount'         => $amount * 100,
             'status'         => Payment::STATUS_PENDING,
             'transaction_id' => $transaction_id,
             'metadata'       => [
@@ -194,7 +194,7 @@ class NirvanaUzsController extends Controller
             }
 
             // Convert UZS to RUB: 1 RUB = 156.25 UZS
-            $amountInRub = $payment->amount / 156.25;
+            $amountInRub = ($payment->amount / 100) / 156.25;
             $amount = round($amountInRub * 100); // internal cents (e.g. 5000 UZS → 32 RUB → 3200 units)
 
             // === Промокод ===

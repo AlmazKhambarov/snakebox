@@ -68,7 +68,7 @@ class NirvanaController extends Controller
             'promocode_id'   => $promocode ? $promocode->id : null,
             'system'         => 'nirvana',
             'method'         => $method,
-            'amount'         => $amount,
+            'amount'         => $amount * 100,
             'status'         => Payment::STATUS_PENDING,
             'transaction_id' => $transaction_id,
             'metadata'       => [
@@ -165,7 +165,7 @@ class NirvanaController extends Controller
             $user = User::query()->find($payment->user_id);
             if (!$user) return response('User not found', 200);
 
-            $receivedAmount = $body['amountFiatReceived'] ?? $payment->amount;
+            $receivedAmount = $body['amountFiatReceived'] ?? ($payment->amount / 100);
             $amount = $receivedAmount * 100;
 
             // === Промокод ===
@@ -271,8 +271,8 @@ class NirvanaController extends Controller
         }
 
         return [
-            'min_amount' => 100000,
-            'max_amount' => 10000000,
+            'min_amount' => 100,
+            'max_amount' => 100000,
         ];
     }
 }
