@@ -62,12 +62,8 @@ class NirvanaUzsController extends Controller
             }
         }
 
-        // Mapping methods to technical codes for Nirvana
-        $nirvanaToken = match ($method) {
-            'Humo UZS'   => 'HUMO',
-            'Uzcard UZS' => 'UZCARD',
-            default      => $method
-        };
+        // Use the method name directly as the token (full names like 'Humo UZS' or 'UZ Card')
+        $nirvanaToken = $method;
 
         $payment = Payment::query()->create([
             'user_id'        => $user->id,
