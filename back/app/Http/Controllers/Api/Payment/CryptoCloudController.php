@@ -21,6 +21,8 @@ use App\Models\ReferralEarning;
 
 class CryptoCloudController extends Controller
 {
+  // 1 USD = 76.89 RUB (fixed exchange rate for crypto deposits)
+  const USD_TO_RUB_RATE = 76.89;
 
   protected RedisService $redisService;
   public function __construct(
@@ -140,7 +142,9 @@ class CryptoCloudController extends Controller
     $user = User::query()->find($payment->user_id);
     if (!$user) return 'User not found';
 
-    $amount = $payment->amount * 100;
+    // Convert USD to RUB balance: $1 = 76.89 RUB, then × 100 for internal cents
+    $amountInRub = $payment->amount * self::USD_TO_RUB_RATE;
+    $amount = round($amountInRub * 100);
 
     // === Промокод ===
     if ($payment->promocode_id) {
@@ -158,10 +162,10 @@ class CryptoCloudController extends Controller
       }
     }
 
-    $event_points = $payment->amount * 0.1;
+    $event_points = $amountInRub * 0.1;
     $user->increment('balance', $amount);
     $user->increment('event_points', $event_points);
-    $user->increment('total_deposited', $payment->amount * 100);
+    $user->increment('total_deposited', $amount);
 
     $payment->status = Payment::STATUS_APPROVED;
     $payment->save();
@@ -192,10 +196,10 @@ class CryptoCloudController extends Controller
           };
         }
 
-        // === ПЕРВЫЙ ДЕПОЗИТ ===
-        if (!$hasOtherDeposits && $payment->amount >= 1000) {
+        // === ПЕРВЫЙ ДЕПОЗИТ (check against RUB equivalent) ===
+        if (!$hasOtherDeposits && $amountInRub >= 1000) {
           $fixedBonus = 2500; // 25 рублей
-          $percentBonus = ($payment->amount * 100) * ($value / 100);
+          $percentBonus = $amount * ($value / 100);
           $totalBonus = $fixedBonus + $percentBonus;
 
           $referrer->update([
@@ -210,7 +214,7 @@ class CryptoCloudController extends Controller
             'user_id' => $referrer->id,
             'referral_id' => $user->id,
             'amount' => $totalBonus,
-            'deposit_amount' => $payment->amount * 100,
+            'deposit_amount' => $amount,
             'percentage' => $value,
             'type' => 'nirvana',
             'description' => 'Бонус 25₽ и ' . $value . '% за первый депозит',
@@ -223,7 +227,7 @@ class CryptoCloudController extends Controller
 
         // === СЛЕДУЮЩИЕ ДЕПОЗИТЫ ===
         else {
-          $percentBonus = ($payment->amount * 100) * ($value / 100);
+          $percentBonus = $amount * ($value / 100);
 
           $referrer->update([
             'balance' => $referrer->balance + $percentBonus,
@@ -236,7 +240,7 @@ class CryptoCloudController extends Controller
             'user_id' => $referrer->id,
             'referral_id' => $user->id,
             'amount' => $percentBonus,
-            'deposit_amount' => $payment->amount * 100,
+            'deposit_amount' => $amount,
             'percentage' => $value,
             'type' => 'nirvana',
             'description' => $value . '% от депозита',

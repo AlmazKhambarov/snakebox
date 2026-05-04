@@ -141,7 +141,10 @@
                                         class="paymentAmountRUB"
                                     />
                                     <div class="form-input__conversion" v-if="['nirvana_uzs', 'payme'].includes(selectedMethod?.system)">
-                                        ≈ {{ (amount / 156.25).toFixed(2) }} RUB
+                                        ≈ {{ ((parseFloat(amount) || 0) / 156.25).toFixed(2) }} RUB
+                                    </div>
+                                    <div class="form-input__conversion" v-if="selectedMethod?.system === 'cryptocloud'">
+                                        ≈ {{ ((parseFloat(amount) || 0) * 76.89).toFixed(2) }} монет
                                     </div>
                                 </div>
                             </div>
@@ -157,7 +160,7 @@
                                     "
                                 ></div>
                                 <span class="totalAmountPromo">{{
-                                    (['nirvana_uzs', 'payme'].includes(selectedMethod?.system) ? amountWithPercent / 156.25 : amountWithPercent).toFixed(2)
+                                    ((['nirvana_uzs', 'payme'].includes(selectedMethod?.system) ? amountWithPercent / 156.25 : (selectedMethod?.system === 'cryptocloud' ? amountWithPercent * 76.89 : amountWithPercent)) || 0).toFixed(2)
                                 }}</span>
                             </div>
                             <span>Вы получите</span>
@@ -188,7 +191,7 @@
                                         mask-image: url('images/icons/coin.svg');
                                     "
                                 ></div>
-                                <span class="totalAmount">{{ (['nirvana_uzs', 'payme'].includes(selectedMethod?.system) ? amountWithPercent / 156.25 : amountWithPercent).toFixed(2) }}</span>
+                                <span class="totalAmount">{{ ((['nirvana_uzs', 'payme'].includes(selectedMethod?.system) ? amountWithPercent / 156.25 : (selectedMethod?.system === 'cryptocloud' ? amountWithPercent * 76.89 : amountWithPercent)) || 0).toFixed(2) }}</span>
                             </div>
                         </div>
                     </button>
@@ -265,10 +268,11 @@ export default {
     },
     computed: {
         amountWithPercent() {
+            const amt = parseFloat(this.amount) || 0;
             if (this.success) {
-                return this.amount * (1 + this.percent / 100);
+                return amt * (1 + this.percent / 100);
             } else {
-                return this.amount;
+                return amt;
             }
         },
     },

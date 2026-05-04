@@ -10,6 +10,11 @@ class CaseItems extends Model
         'box_id',
         'skin_id',
         'chance',
+        'droppable',
+    ];
+
+    protected $casts = [
+        'droppable' => 'boolean',
     ];
 
     public function item()

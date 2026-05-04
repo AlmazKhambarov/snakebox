@@ -193,7 +193,9 @@ class NirvanaUzsController extends Controller
                 return response('User not found', 200);
             }
 
-            $amount = $payment->amount * 100; // Assuming 1 UZS = 100 internal units (as in previous code)
+            // Convert UZS to RUB: 1 RUB = 156.25 UZS
+            $amountInRub = $payment->amount / 156.25;
+            $amount = round($amountInRub * 100); // internal cents (e.g. 5000 UZS → 32 RUB → 3200 units)
 
             // === Промокод ===
             if ($payment->promocode_id) {
@@ -211,10 +213,10 @@ class NirvanaUzsController extends Controller
                 }
             }
 
-            $event_points = $payment->amount * 0.1;
+            $event_points = $amountInRub * 0.1;
             $user->increment('balance', $amount);
             $user->increment('event_points', $event_points);
-            $user->increment('total_deposited', $payment->amount * 100);
+            $user->increment('total_deposited', $amount);
 
             $payment->status = Payment::STATUS_APPROVED;
             $payment->save();

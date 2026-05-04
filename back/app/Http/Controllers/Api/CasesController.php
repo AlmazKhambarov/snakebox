@@ -221,6 +221,7 @@ class CasesController extends Controller
         $caseItems = CaseItems::with('item')
             ->where('box_id', $box->id)
             ->where('chance', '>', 0)
+            ->where('droppable', true)
             ->get();
 
         if ($caseItems->isEmpty()) {
