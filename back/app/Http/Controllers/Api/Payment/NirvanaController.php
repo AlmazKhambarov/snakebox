@@ -166,6 +166,13 @@ class NirvanaController extends Controller
             if (!$user) return response('User not found', 200);
 
             $receivedAmount = $body['amountFiatReceived'] ?? ($payment->amount / 100);
+            
+            // Check if this was a UZS payment (Humo/Uzcard) hitting the RUB controller
+            // or if the system is nirvana_uzs (though it has its own controller, sometimes they share keys/webhooks)
+            if (($body['currency'] ?? '') === 'UZS' || $payment->system === 'nirvana_uzs') {
+                $receivedAmount = $receivedAmount / 156.25;
+            }
+
             $amount = $receivedAmount * 100;
 
             // === Промокод ===
