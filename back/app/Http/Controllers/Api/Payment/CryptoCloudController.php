@@ -262,6 +262,14 @@ class CryptoCloudController extends Controller
 
   private function getDepositLimits($method, $system)
   {
+    // Force 1$ minimum for TON methods
+    if (in_array($method, ['TON', 'USDT_TON'])) {
+      return [
+        'min_amount' => 1,
+        'max_amount' => 100000
+      ];
+    }
+
     $paymentMethod = PaymentMethods::where('method', $method)
       ->where('system', $system)
       ->first();

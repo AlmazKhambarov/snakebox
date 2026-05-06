@@ -226,8 +226,7 @@ class NirvanaUzsController extends Controller
                 ->where('status', Payment::STATUS_APPROVED)
                 ->where('id', '!=', $payment->id)
                 ->exists();
-
-            // === РЕФЕРАЛКА ===
+                
             if ($user->referrer_id !== null) {
                 $referrer = User::query()->find($user->referrer_id);
                 if ($referrer) {
