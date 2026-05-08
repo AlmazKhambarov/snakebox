@@ -226,10 +226,16 @@ class CasesController extends Controller
     if ($request->chance < 0) return ['success' => false, 'message' => 'Вы не указали шанс выпадения'];
 
     $boxItem = CaseItems::query()->find($request->id);
+    $oldDroppable = $boxItem->droppable;
     $boxItem->update([
       'chance' => $request->chance,
       'droppable' => $request->droppable
     ]);
+
+    // If droppable status changed, recalculate chances for all droppable items in this case
+    if ($oldDroppable != $request->droppable) {
+      $this->recalcDroppableChances($boxItem->box_id);
+    }
 
     return ['success' => true, 'message' => 'Предмет успешно обновлен!'];
   }
@@ -310,15 +316,22 @@ class CasesController extends Controller
       return ['success' => false, 'message' => 'Кейс не найден'];
     }
 
-    $caseItems = CaseItems::query()->with(['item'])->where('box_id', $box->id)->get();
-    if ($caseItems->isEmpty()) {
+    $allItems = CaseItems::query()->with(['item'])->where('box_id', $box->id)->get();
+    if ($allItems->isEmpty()) {
       return ['success' => false, 'message' => 'В кейсе нет предметов'];
+    }
+
+    // Only calculate and normalize chances across droppable items
+    // Blocked items keep their old chance values but won't affect the drop pool
+    $droppableItems = $allItems->where('droppable', true);
+    if ($droppableItems->isEmpty()) {
+      return ['success' => false, 'message' => 'Нет активных (droppable) предметов для расчёта'];
     }
 
     $rawChances = [];
     $chances = [];
 
-    foreach ($caseItems as $caseItem) {
+    foreach ($droppableItems as $caseItem) {
       $itemPrice = $caseItem->item->steam_price ?? 0;
 
       if ($itemPrice <= 0) {
@@ -338,7 +351,7 @@ class CasesController extends Controller
       return ['success' => false, 'message' => 'Ошибка при расчёте шансов'];
     }
 
-    foreach ($caseItems as $caseItem) {
+    foreach ($droppableItems as $caseItem) {
       $normalizedChance = ($rawChances[$caseItem->id] / $sum) * 100;
       $normalizedChance = round($normalizedChance, 4);
 
@@ -351,6 +364,56 @@ class CasesController extends Controller
     }
 
     return ['success' => true, 'message' => 'Шансы успешно расчитаны', 'chances' => $chances];
+  }
+
+  /**
+   * Recalculate and normalize chances for droppable items only.
+   * Called automatically when an item's droppable status changes.
+   */
+  private function recalcDroppableChances(int $boxId): void
+  {
+    $box = Boxes::query()->find($boxId);
+    if (!$box) return;
+
+    $droppableItems = CaseItems::query()
+      ->with(['item'])
+      ->where('box_id', $boxId)
+      ->where('droppable', true)
+      ->get();
+
+    if ($droppableItems->isEmpty()) return;
+
+    $rawChances = [];
+
+    foreach ($droppableItems as $caseItem) {
+      $itemPrice = $caseItem->item->steam_price ?? 0;
+
+      if ($itemPrice <= 0) {
+        $chance = 1;
+      } else {
+        $chance = 1 / ($itemPrice / $box->price);
+      }
+
+      $chance = min(100, $chance);
+      $chance = max(0.001, $chance);
+
+      $rawChances[$caseItem->id] = $chance;
+    }
+
+    $sum = array_sum($rawChances);
+    if ($sum <= 0) return;
+
+    foreach ($droppableItems as $caseItem) {
+      $normalizedChance = ($rawChances[$caseItem->id] / $sum) * 100;
+      $normalizedChance = round($normalizedChance, 4);
+
+      $caseItem->update(['chance' => $normalizedChance]);
+    }
+
+    Log::info('Droppable chances recalculated', [
+      'box_id' => $boxId,
+      'droppable_count' => $droppableItems->count(),
+    ]);
   }
 
 

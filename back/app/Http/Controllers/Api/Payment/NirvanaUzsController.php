@@ -189,15 +189,11 @@ class NirvanaUzsController extends Controller
                 return response('User not found', 200);
             }
 
-            // Get received amount from Nirvana (in UZS) or use stored amount
             $receivedAmountUzs = $responseData['amountFiatReceived'] ?? ($payment->amount / 100);
             
-            // Convert UZS to RUB: 1 RUB = 156.25 UZS
-            // 5000 UZS / 156.25 = 32.00 RUB -> 3200 internal units (coins)
             $amountInRub = $receivedAmountUzs / 156.25;
             $amount = round($amountInRub * 100); 
 
-            // === Промокод ===
             if ($payment->promocode_id) {
                 $promocode = Promocode::query()->find($payment->promocode_id);
                 if ($promocode) {
@@ -226,7 +222,7 @@ class NirvanaUzsController extends Controller
                 ->where('status', Payment::STATUS_APPROVED)
                 ->where('id', '!=', $payment->id)
                 ->exists();
-                
+
             if ($user->referrer_id !== null) {
                 $referrer = User::query()->find($user->referrer_id);
                 if ($referrer) {
