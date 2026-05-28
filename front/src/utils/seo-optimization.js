@@ -155,7 +155,7 @@ const additionalMetaTags = `
   },
   "sameAs": [
     "https://vk.com/snakebox_vip",
-    "https://t.me/snakebox_vip",
+    "https://t.me/SnakeDrop_uz",
     "https://discord.gg/snakebox_vip"
   ]
 }

@@ -430,7 +430,7 @@ class RTPService
         $finalChance = $adjustedChance * $priorityModifier;
         
         // Ограничиваем финальный шанс
-        $finalChance = max(0.01, min($finalChance, 80)); // Максимум 80%
+        $finalChance = max(0.01, min($finalChance, 90)); // Максимум 90%
 
         return round($finalChance, 2);
     }

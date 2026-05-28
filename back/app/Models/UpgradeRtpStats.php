@@ -20,6 +20,7 @@ class UpgradeRtpStats extends Model
         'max_rtp',
         'current_rtp',
         'last_rtp_update',
+        'chance_boost',
     ];
 
     protected $casts = [
@@ -27,6 +28,7 @@ class UpgradeRtpStats extends Model
         'min_rtp' => 'decimal:2',
         'max_rtp' => 'decimal:2',
         'current_rtp' => 'decimal:2',
+        'chance_boost' => 'decimal:2',
         'last_rtp_update' => 'datetime',
     ];
 

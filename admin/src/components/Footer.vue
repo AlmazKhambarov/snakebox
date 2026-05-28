@@ -8,10 +8,10 @@
             <div class="text-gray-900 order-2 order-md-1">
                 <span class="text-muted fw-semibold me-1">2025&copy;</span>
                 <a
-                    href="https://t.me/htmlpixelweb"
+                    href="https://t.me/SnakeDrop_uz"
                     target="_blank"
                     class="text-gray-800 text-hover-primary"
-                    >@htmlpixel</a
+                    >@SnakeDrop_uz</a
                 >
             </div>
             <!--end::Copyright-->

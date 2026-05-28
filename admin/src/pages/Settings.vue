@@ -123,6 +123,66 @@
             </div>
           </div>
         </div>
+
+        <!-- Upgrade Settings Card -->
+        <div class="card mb-5 mb-xl-10">
+          <div class="card-header border-0">
+            <div class="card-title m-0">
+              <h3 class="fw-bold m-0">⚡ Настройки Апгрейда</h3>
+            </div>
+            <div class="card-toolbar">
+              <button @click="saveUpgradeSettings" class="btn btn-sm fw-bold btn-success">
+                Сохранить апгрейд
+              </button>
+            </div>
+          </div>
+          <div class="card-body pt-0">
+            <div class="alert alert-info mb-5">
+              <strong>Chance Boost</strong> — базовый шанс апгрейда увеличивается на указанный %.
+              Например: предмет стоит 50% от цели → базовый шанс 50%. С boost +10% → итого 60%.
+              Максимум апгрейда: <strong>90%</strong>.
+            </div>
+            <div class="form-group row">
+              <div class="col-lg-3">
+                <label class="form-label required">Chance Boost (%)</label>
+                <div class="input-group-sm mb-5">
+                  <input
+                    type="number"
+                    class="form-control"
+                    v-model="upgradeSettings.chance_boost"
+                    min="0"
+                    max="50"
+                    step="0.5"
+                    placeholder="0"
+                  />
+                </div>
+                <small class="text-muted">Qo'shimcha % (0 — boost yo'q, 10 — +10%)</small>
+              </div>
+              <div class="col-lg-3">
+                <label class="form-label required">Целевой RTP (%)</label>
+                <div class="input-group-sm mb-5">
+                  <input type="number" class="form-control" v-model="upgradeSettings.target_rtp"
+                    min="10" max="100" step="0.1" />
+                </div>
+              </div>
+              <div class="col-lg-3">
+                <label class="form-label required">Мин. RTP (%)</label>
+                <div class="input-group-sm mb-5">
+                  <input type="number" class="form-control" v-model="upgradeSettings.min_rtp"
+                    min="10" max="100" step="0.1" />
+                </div>
+              </div>
+              <div class="col-lg-3">
+                <label class="form-label required">Макс. RTP (%)</label>
+                <div class="input-group-sm mb-5">
+                  <input type="number" class="form-control" v-model="upgradeSettings.max_rtp"
+                    min="10" max="100" step="0.1" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -140,6 +200,12 @@ export default {
   data() {
     return {
       settings: {},
+      upgradeSettings: {
+        chance_boost: 0,
+        target_rtp: 92,
+        min_rtp: 88,
+        max_rtp: 96,
+      },
     };
   },
   methods: {
@@ -147,6 +213,13 @@ export default {
       await this.settingsStore.startLoading();
       request("GET", "/api/admin/settings").then(({ data }) => {
         this.settings = { ...data };
+      });
+    },
+    async getUpgradeSettings() {
+      request("GET", "/api/admin/upgrade/settings").then(({ data }) => {
+        if (data.success) {
+          this.upgradeSettings = { ...data.settings };
+        }
       });
     },
     async saveSettings() {
@@ -158,10 +231,20 @@ export default {
         }
       });
     },
+    async saveUpgradeSettings() {
+      request("POST", "/api/admin/upgrade/settings", this.upgradeSettings).then(({ data }) => {
+        if (data.success) {
+          toast.success(data.message);
+        } else {
+          toast.error(data.message || 'Xatolik yuz berdi');
+        }
+      });
+    },
   },
   created() {
     this.settingsStore = useSettingsStore();
     this.getSettings();
+    this.getUpgradeSettings();
   },
 };
 </script>

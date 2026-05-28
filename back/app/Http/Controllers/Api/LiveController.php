@@ -48,7 +48,7 @@ class LiveController extends Controller
       'statistics' => [
         'players' => $players + 294,
         'total_games' => $total_games + 2049,
-        'withdraws' => $withdraws + 213,
+        'withdraws' => $withdraws + 22213,
       ],
     ];
   }

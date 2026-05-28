@@ -10,7 +10,7 @@
                 <div class="bonus__task-left">
                     <div class="bonus__task-title">
                         Подпишись на
-                        <a href="https://t.me/SnakeDrop" target="_blank"
+                        <a href="https://t.me/SnakeDrop_uz" target="_blank"
                             >Telegram</a
                         >
                     </div>

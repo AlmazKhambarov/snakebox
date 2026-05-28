@@ -353,4 +353,8 @@ Route::prefix('/admin')->middleware('auth:sanctum')->group(function () {
     Route::post('/uc/pending', [App\Http\Controllers\Api\UCController::class, 'listPending']);
     Route::post('/uc/confirm', [App\Http\Controllers\Api\UCController::class, 'confirm']);
     Route::post('/uc/decline', [App\Http\Controllers\Api\UCController::class, 'decline']);
+
+    // Upgrade settings
+    Route::get('/upgrade/settings', [App\Http\Controllers\Admin\UpgradeSettingsController::class, 'get']);
+    Route::post('/upgrade/settings', [App\Http\Controllers\Admin\UpgradeSettingsController::class, 'save']);
 });

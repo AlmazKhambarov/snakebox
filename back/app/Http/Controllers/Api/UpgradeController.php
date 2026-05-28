@@ -180,12 +180,14 @@ class UpgradeController extends Controller
 
         // Базовый шанс апгрейда
         $baseChance = ($totalPrice / $siteItem->steam_price) * 100;
-        $baseChance = max(0.01, min($baseChance, 75));
 
-        // Получаем статистику RTP из таблицы upgrade_rtp_stats
+        // Получаем boost из настроек и добавляем к базовому шансу
         $rtpStats = UpgradeRtpStats::getStats();
-        
-        // Рассчитываем финальный шанс с учетом RTP и приоритетом низких процентов
+        $chanceBoost = (float) ($rtpStats->chance_boost ?? 0);
+        $baseChance = $baseChance + $chanceBoost;
+        $baseChance = max(0.01, min($baseChance, 90)); // Максимум 90%
+
+        // Рассчитываем финальный шанс с учетом RTP
         $gameChance = $this->rtpService->calculateUpgradeChance($baseChance, $rtpStats);
 
         $success = ($randomFloat * 100) <= $gameChance;

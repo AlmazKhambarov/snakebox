@@ -307,7 +307,7 @@
                                 type="number"
                                 class="form-control"
                                 step="0.01"
-                                min="50"
+                                min="10"
                                 max="100"
                             />
                             <small class="text-muted">Нижний порог</small>
@@ -385,7 +385,7 @@ export default {
             rtpData: {
                 current_rtp: 95,
                 target_rtp: 95,
-                min_rtp: 85,
+                min_rtp: 10,
                 max_rtp: 98,
                 total_opened: 0,
                 total_spent: 0,
@@ -393,7 +393,7 @@ export default {
             },
             rtpSettings: {
                 target_rtp: 95,
-                min_rtp: 85,
+                min_rtp: 10,
                 max_rtp: 98,
             },
             handlersAttached: false,

@@ -526,9 +526,9 @@ class CasesController extends Controller
     $id = $request->id;
 
     $request->validate([
-      'target_rtp' => 'required|numeric|min:50|max:100',
-      'min_rtp' => 'required|numeric|min:50|max:100',
-      'max_rtp' => 'required|numeric|min:50|max:100',
+      'target_rtp' => 'required|numeric|min:10|max:100',
+      'min_rtp' => 'required|numeric|min:10|max:100',
+      'max_rtp' => 'required|numeric|min:10|max:100',
     ]);
 
     $box = Boxes::find($id);
