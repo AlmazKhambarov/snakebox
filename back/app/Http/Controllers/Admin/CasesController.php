@@ -202,7 +202,7 @@ class CasesController extends Controller
       'box_id' => $request->box_id,
       'skin_id' => $request->skin_id,
       'chance' => $request->chance,
-      'droppable' => $request->droppable
+      'droppable' => $request->has('droppable') ? (bool) $request->droppable : true,
     ]);
 
     return ['success' => true, 'message' => 'Предмет успешно добавлен!'];
@@ -468,6 +468,7 @@ class CasesController extends Controller
         'box_id' => $box->id,
         'skin_id' => $item->id,
         'chance' => 1,
+        'droppable' => true,
       ]);
     }
 
