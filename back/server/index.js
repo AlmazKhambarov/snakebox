@@ -40,12 +40,36 @@ global.io = io;
 
 const client = createClient({
     socket: {
-        host: "127.0.0.1", // IPv4 localhost
+        host: "127.0.0.1",
         port: 6379,
+        reconnectStrategy: (retries) => {
+            if (retries > 20) {
+                console.error("Redis: too many retries, giving up");
+                return new Error("Redis: too many retries");
+            }
+            console.log(`Redis: reconnecting... attempt ${retries}`);
+            return Math.min(retries * 500, 5000); // ждать до 5 сек между попытками
+        },
     },
 });
+
+client.on("error", (err) => {
+    console.error("Redis client error:", err.message);
+});
+
+client.connect().catch((err) => {
+    console.error("Redis initial connect failed:", err.message);
+});
+
 const subscriber = client.duplicate();
-subscriber.connect();
+
+subscriber.on("error", (err) => {
+    console.error("Redis subscriber error:", err.message);
+});
+
+subscriber.connect().catch((err) => {
+    console.error("Redis subscriber connect failed:", err.message);
+});
 
 const channels = ["userBalance", "liveFeed", "setItemsStatus", "newRaffle", "giveawayFinished"];
 
