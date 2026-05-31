@@ -104,16 +104,16 @@ let isOnlineInitialized = false;
 
 // Плавное изменение онлайн каждые 10-20 секунд
 setInterval(() => {
-    const change = Math.floor(Math.random() * 8) - 4; // -4 to +4
+    const change = Math.floor(Math.random() * 30) - 15; // -15 to +15
     if (change !== 0) {
         displayOnline += change;
         // Не даем упасть ниже реального онлайн + минимум фейка
-        const minOnline = realOnline + 20;
+        const minOnline = realOnline + 950;
         if (displayOnline < minOnline) {
             displayOnline = minOnline;
         }
         // Не даем подняться слишком высоко
-        const maxOnline = realOnline + 50;
+        const maxOnline = realOnline + 1100;
         if (displayOnline > maxOnline) {
             displayOnline = maxOnline;
         }
@@ -133,7 +133,7 @@ io.on("connection", (socket) => {
 
     // При первом подключении инициализируем онлайн
     if (!isOnlineInitialized) {
-        const fakeOnline = Math.floor(Math.random() * 31) + 20; // 20-50
+        const fakeOnline = Math.floor(Math.random() * 151) + 950; // 950-1100
         displayOnline = realOnline + fakeOnline;
         isOnlineInitialized = true;
     }
